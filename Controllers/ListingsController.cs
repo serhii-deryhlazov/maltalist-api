@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using MaltalistApi.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace MaltalistApi.Controllers
 {
@@ -6,26 +10,56 @@ namespace MaltalistApi.Controllers
     [Route("api/[controller]")]
     public class ListingsController : ControllerBase
     {
-        // Sample endpoint to get all listings
-        [HttpGet]
-        public IActionResult GetAllListings()
-        {
-            var listings = new[]
-            {
-                new { id = 1, name = "Listing 1", description = "Description 1" },
-                new { id = 2, name = "Listing 2", description = "Description 2" },
-                new { id = 3, name = "Listing 3", description = "Description 3" }
-            };
+        private readonly MaltalistDbContext _db;
 
+        public ListingsController(MaltalistDbContext db)
+        {
+            _db = db;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Listing>>> GetAllListings()
+        {
+            var listings = await _db.Listings.ToListAsync();
             return Ok(listings);
         }
 
-        // Sample endpoint for listing details by ID
         [HttpGet("{id}")]
-        public IActionResult GetListingById(int id)
+        public async Task<ActionResult<Listing>> GetListingById(int id)
         {
-            var listing = new { id, name = $"Listing {id}", description = $"Description {id}" };
+            var listing = await _db.Listings.FindAsync(id);
+            if (listing == null)
+                return NotFound();
+
             return Ok(listing);
         }
+
+        [HttpPost]
+        public async Task<ActionResult<Listing>> CreateListing([FromBody] CreateListingRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Description))
+                return BadRequest("Invalid listing data");
+
+            var newListing = new Listing
+            {
+                Title = request.Name,
+                Description = request.Description,
+                Price = request.Price,
+                Category = request.Category
+            };
+
+            _db.Listings.Add(newListing);
+            await _db.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetListingById), new { id = newListing.Id }, newListing);
+        }
+    }
+
+    public class CreateListingRequest
+    {
+        public string Name { get; set; }  // maps to Title in DB
+        public string Description { get; set; }
+        public decimal Price { get; set; }
+        public string Category { get; set; }
     }
 }

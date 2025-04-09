@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using MaltalistApi.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MaltalistApi.Controllers
 {
@@ -6,18 +10,30 @@ namespace MaltalistApi.Controllers
     [Route("api/[controller]")]
     public class UserProfileController : ControllerBase
     {
-        // Sample endpoint to get user profile data
-        [HttpGet]
-        public IActionResult GetUserProfile()
+        private readonly MaltalistDbContext _db;
+
+        public UserProfileController(MaltalistDbContext db)
         {
+            _db = db;
+        }
+
+        [HttpGet("{username}")]
+        public async Task<IActionResult> GetUserProfile(string username)
+        {
+            var listings = await _db.Listings
+                .Where(l => l.UserName == username)
+                .Select(l => new
+                {
+                    id = l.Id,
+                    name = l.Title,
+                    description = l.Description
+                })
+                .ToListAsync();
+
             var profile = new
             {
-                userName = "John Doe",
-                listings = new[]
-                {
-                    new { id = 1, name = "Listing 1", description = "Description 1" },
-                    new { id = 2, name = "Listing 2", description = "Description 2" }
-                }
+                userName = username,
+                listings = listings
             };
 
             return Ok(profile);
