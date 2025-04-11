@@ -24,7 +24,8 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Use CORS policy
+app.UseRouting();
+
 app.UseCors("AllowAll");
 
 app.MapControllers();
