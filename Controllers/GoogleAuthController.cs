@@ -34,7 +34,7 @@ public class GoogleAuthController : ControllerBase
             return Unauthorized(new { Message = "Invalid Google ID token" });
         }
 
-        var userId = long.Parse(payload.Subject); // Google 'sub' is unique per user
+        var userId = payload.Subject;
         var user = await _db.Users.FindAsync(userId);
 
         if (user == null)
@@ -61,4 +61,5 @@ public class GoogleAuthController : ControllerBase
 
         return Ok(user);
     }
+
 }

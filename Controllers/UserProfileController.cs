@@ -15,7 +15,7 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<User>> GetUserProfile(long id)
+    public async Task<ActionResult<User>> GetUserProfile(string id)
     {
         var user = await _db.Users.FindAsync(id);
 
@@ -28,7 +28,7 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<User>> UpdateUserProfile(long id, [FromBody] User updatedUser)
+    public async Task<ActionResult<User>> UpdateUserProfile(string id, [FromBody] User updatedUser)
     {
         if (id != updatedUser.Id)
         {
@@ -53,7 +53,7 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteUserProfile(long id)
+    public async Task<ActionResult> DeleteUserProfile(string id)
     {
         var user = await _db.Users.FindAsync(id);
         if (user == null)
