@@ -74,7 +74,10 @@ public class ListingsController : ControllerBase
             Title = request.Name,
             Description = request.Description,
             Price = request.Price,
-            Category = request.Category
+            Category = request.Category,
+            UserId = request.UserId,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         _db.Listings.Add(newListing);
