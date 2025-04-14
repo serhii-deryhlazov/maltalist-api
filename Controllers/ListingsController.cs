@@ -69,6 +69,10 @@ public class ListingsController : ControllerBase
         if (request == null || string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest("Invalid listing data");
 
+        var user = await _db.Users.FindAsync(request.UserId);
+        if (user == null)
+            return BadRequest("Invalid UserId");
+
         var newListing = new Listing
         {
             Title = request.Name,
@@ -76,6 +80,16 @@ public class ListingsController : ControllerBase
             Price = request.Price,
             Category = request.Category,
             UserId = request.UserId,
+            Picture1 = request.Picture1,
+            Picture2 = request.Picture2,
+            Picture3 = request.Picture3,
+            Picture4 = request.Picture4,
+            Picture5 = request.Picture5,
+            Picture6 = request.Picture6,
+            Picture7 = request.Picture7,
+            Picture8 = request.Picture8,
+            Picture9 = request.Picture9,
+            Picture10 = request.Picture10,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
