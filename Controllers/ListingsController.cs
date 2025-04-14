@@ -16,7 +16,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<GetAllListingsResponse>> GetAllListings(GetAllListingsRequest request)
+    public async Task<ActionResult<GetAllListingsResponse>> GetAllListings([FromQuery] GetAllListingsRequest request)
     {
         var query = _db.Listings.AsQueryable();
 
