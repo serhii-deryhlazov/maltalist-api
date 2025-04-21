@@ -66,7 +66,7 @@ public class ListingsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Listing>> CreateListing([FromBody] CreateListingRequest request)
     {
-        if (request == null || string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Description))
+        if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest("Invalid listing data");
 
         var user = await _db.Users.FindAsync(request.UserId);
@@ -75,7 +75,7 @@ public class ListingsController : ControllerBase
 
         var newListing = new Listing
         {
-            Title = request.Name,
+            Title = request.Title,
             Description = request.Description,
             Price = request.Price,
             Category = request.Category,
@@ -103,14 +103,14 @@ public class ListingsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<Listing>> UpdateListing(int id, [FromBody] CreateListingRequest request)
     {
-        if (request == null || string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Description))
+        if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest("Invalid listing data");
 
         var listing = await _db.Listings.FindAsync(id);
         if (listing == null)
             return NotFound();
 
-        listing.Title = request.Name;
+        listing.Title = request.Title;
         listing.Description = request.Description;
         listing.Price = request.Price;
         listing.Category = request.Category;
