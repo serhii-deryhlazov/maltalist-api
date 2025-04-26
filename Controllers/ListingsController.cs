@@ -32,8 +32,8 @@ public class ListingsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(request.SortBy))
         {
-            query = request.OrderBy == "desc" 
-                ? query.OrderByDescending(l => EF.Property<object>(l, request.SortBy)) 
+            query = request.OrderBy == "desc"
+                ? query.OrderByDescending(l => EF.Property<object>(l, request.SortBy))
                 : query.OrderBy(l => EF.Property<object>(l, request.SortBy));
         }
 
@@ -55,44 +55,6 @@ public class ListingsController : ControllerBase
                 Picture1 = l.Picture1
             })
             .ToListAsync();
-
-        return Ok(new GetAllListingsResponse
-        {
-            TotalNumber = totalNumber,
-            Listings = listings,
-            Page = request.Page
-        });
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<GetAllListingsResponse>> GetAllListings([FromQuery] GetAllListingsRequest request)
-    {
-        var query = _db.Listings.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(request.Search))
-        {
-            query = query.Where(l => l.Title.Contains(request.Search) || l.Description.Contains(request.Search));
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Category))
-        {
-            query = query.Where(l => l.Category == request.Category);
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.SortBy))
-        {
-            if (request.OrderBy == "desc")
-            {
-                query = query.OrderByDescending(l => EF.Property<object>(l, request.SortBy));
-            }
-            else
-            {
-                query = query.OrderBy(l => EF.Property<object>(l, request.SortBy));
-            }
-        }
-
-        var totalNumber = await query.CountAsync();
-        var listings = await query.Skip((request.Page - 1) * request.Limit).Take(request.Limit).ToListAsync();
 
         return Ok(new GetAllListingsResponse
         {
