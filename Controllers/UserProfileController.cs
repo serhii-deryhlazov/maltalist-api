@@ -45,6 +45,7 @@ public class UserProfileController : ControllerBase
         user.UserPicture = updatedUser.UserPicture;
         user.Email = updatedUser.Email;
         user.LastOnline = DateTime.UtcNow;
+        user.PhoneNumber = updatedUser.PhoneNumber;
 
         _db.Users.Update(user);
         await _db.SaveChangesAsync();
