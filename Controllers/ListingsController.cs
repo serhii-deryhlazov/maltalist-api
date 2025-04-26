@@ -15,6 +15,25 @@ public class ListingsController : ControllerBase
         _db = db;
     }
 
+    [HttpGet("minimal")]
+    public async Task<ActionResult<IEnumerable<ListingSummaryResponse>>> GetListingsMinimal()
+    {
+        var listings = await _db.Listings.Select(l => new ListingSummaryResponse
+        {
+            Id = l.Id,
+            Title = l.Title,
+            Description = l.Description,
+            Price = l.Price,
+            Category = l.Category,
+            UserId = l.UserId,
+            CreatedAt = l.CreatedAt,
+            UpdatedAt = l.UpdatedAt,
+            Picture1 = l.Picture1
+        }).ToListAsync();
+        
+        return Ok(listings);
+    }
+
     [HttpGet]
     public async Task<ActionResult<GetAllListingsResponse>> GetAllListings([FromQuery] GetAllListingsRequest request)
     {
