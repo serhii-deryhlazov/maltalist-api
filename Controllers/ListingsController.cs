@@ -125,6 +125,17 @@ public class ListingsController : ControllerBase
         listing.Description = request.Description;
         listing.Price = request.Price;
         listing.Category = request.Category;
+        listing.Picture1 = request.Picture1;
+        listing.Picture2 = request.Picture2;
+        listing.Picture3 = request.Picture3;
+        listing.Picture4 = request.Picture4;
+        listing.Picture5 = request.Picture5;
+        listing.Picture6 = request.Picture6;
+        listing.Picture7 = request.Picture7;
+        listing.Picture8 = request.Picture8;
+        listing.Picture9 = request.Picture9;
+        listing.Picture10 = request.Picture10;
+        listing.UpdatedAt = DateTime.UtcNow;
 
         _db.Listings.Update(listing);
         await _db.SaveChangesAsync();
