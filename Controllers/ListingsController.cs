@@ -164,7 +164,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpGet("{id}/listings")]
-    public async Task<ActionResult<IEnumerable<Listing>>> GetUserListings(string id)
+    public async Task<ActionResult<IEnumerable<ListingSummaryResponse>>> GetUserListings(string id)
     {
         var user = await _db.Users.FindAsync(id);
         if (user == null)
@@ -172,7 +172,22 @@ public class ListingsController : ControllerBase
             return NotFound(new { Message = "User not found" });
         }
 
-        var listings = await _db.Listings.Where(l => l.UserId == id).ToListAsync();
+        var listings = await _db.Listings
+            .Where(l => l.UserId == id)
+            .Select(l => new ListingSummaryResponse
+            {
+                Id = l.Id,
+                Title = l.Title,
+                Description = l.Description,
+                Price = l.Price,
+                Category = l.Category,
+                UserId = l.UserId,
+                CreatedAt = l.CreatedAt,
+                UpdatedAt = l.UpdatedAt,
+                Picture1 = l.Picture1
+            })
+            .ToListAsync();
+
         return Ok(listings);
     }
 }
