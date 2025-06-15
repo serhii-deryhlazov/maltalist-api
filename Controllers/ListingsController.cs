@@ -30,12 +30,7 @@ public class ListingsController : ControllerBase
             query = query.Where(l => l.Category == request.Category);
         }
 
-        if (!string.IsNullOrWhiteSpace(request.SortBy))
-        {
-            query = request.OrderBy == "desc"
-                ? query.OrderByDescending(l => EF.Property<object>(l, request.SortBy))
-                : query.OrderBy(l => EF.Property<object>(l, request.SortBy));
-        }
+        query = query.OrderByDescending(l => l.CreatedAt);
 
         var totalNumber = await query.CountAsync();
 
