@@ -71,7 +71,10 @@ public class UserProfileController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<User>> CreateUserProfile([FromBody] User newUser)
     {
-        if (newUser == null || string.IsNullOrWhiteSpace(newUser.UserName) || string.IsNullOrWhiteSpace(newUser.Email))
+        if (newUser == null
+        || string.IsNullOrWhiteSpace(newUser.UserName)
+        || string.IsNullOrWhiteSpace(newUser.Email)
+        || string.IsNullOrWhiteSpace(newUser.Id))
         {
             return BadRequest(new { Message = "Invalid user data" });
         }
