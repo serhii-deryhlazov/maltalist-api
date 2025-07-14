@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Cors;
 using MaltalistApi.Models;
+using MaltalistApi.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,7 +8,6 @@ builder.Services.AddDbContext<MaltalistDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
-// Add CORS policy
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -19,7 +18,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add services to the container.
+builder.Services.AddScoped<IListingsService, ListingsService>();
+builder.Services.AddScoped<IPicturesService, PicturesService>();
+builder.Services.AddScoped<IUsersService, UsersService>();
+
 builder.Services.AddControllers();
 
 var app = builder.Build();

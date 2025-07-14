@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using MaltalistApi.Models;
+using MaltalistApi.Services;
 
 namespace MaltalistApi.Controllers;
 
@@ -8,65 +8,60 @@ namespace MaltalistApi.Controllers;
 [Route("api/[controller]")]
 public class ListingsController : ControllerBase
 {
-    private readonly MaltalistDbContext _db;
+    private readonly IListingsService _listingsService;
+    private readonly IPicturesService _picturesService;
 
-    public ListingsController(MaltalistDbContext db)
+    public ListingsController(IListingsService listingsService, IPicturesService picturesService)
     {
-        _db = db;
+        _listingsService = listingsService;
+        _picturesService = picturesService;
     }
 
     [HttpGet("minimal")]
     public async Task<ActionResult<GetAllListingsResponse>> GetMinimalListingsPaginated([FromQuery] GetAllListingsRequest request)
     {
-        var query = _db.Listings.AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(request.Search))
-        {
-            query = query.Where(l => l.Title.Contains(request.Search) || l.Description.Contains(request.Search));
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Category))
-        {
-            query = query.Where(l => l.Category == request.Category);
-        }
-
-        query = query.OrderByDescending(l => l.CreatedAt);
-
-        var totalNumber = await query.CountAsync();
-
-        var listings = await query
-            .Skip((request.Page - 1) * request.Limit)
-            .Take(request.Limit)
-            .Select(l => new ListingSummaryResponse
-            {
-                Id = l.Id,
-                Title = l.Title,
-                Description = l.Description,
-                Price = l.Price,
-                Category = l.Category,
-                UserId = l.UserId,
-                CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt,
-                Picture1 = l.Picture1
-            })
-            .ToListAsync();
-
-        return Ok(new GetAllListingsResponse
-        {
-            TotalNumber = totalNumber,
-            Listings = listings,
-            Page = request.Page
-        });
+        var result = await _listingsService.GetMinimalListingsPaginatedAsync(request);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Listing>> GetListingById(int id)
     {
-        var listing = await _db.Listings.FindAsync(id);
+        var listing = await _listingsService.GetListingByIdAsync(id);
         if (listing == null)
             return NotFound();
 
         return Ok(listing);
+    }
+
+    [HttpPost("{id}/pictures")]
+    public async Task<IActionResult> AddListingPictures(int id)
+    {
+        var listing = await _listingsService.GetListingByIdAsync(id);
+        if (listing == null)
+            return NotFound();
+
+        var files = Request.Form.Files;
+        if (files == null || files.Count == 0)
+            return BadRequest("No files uploaded.");
+
+        var result = await _picturesService.AddListingPicturesAsync(id, files);
+        return Ok(new { Saved = result });
+    }
+
+    [HttpPut("{id}/pictures")]
+    public async Task<IActionResult> UpdateListingPictures(int id)
+    {
+        var listing = await _listingsService.GetListingByIdAsync(id);
+        if (listing == null)
+            return NotFound();
+
+        var files = Request.Form.Files;
+        if (files == null || files.Count == 0)
+            return BadRequest("No files uploaded.");
+
+        var result = await _picturesService.UpdateListingPicturesAsync(id, files);
+        return Ok(new { Updated = result });
     }
 
     [HttpPost]
@@ -75,35 +70,11 @@ public class ListingsController : ControllerBase
         if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest("Invalid listing data");
 
-        var user = await _db.Users.FindAsync(request.UserId);
-        if (user == null)
+        var listing = await _listingsService.CreateListingAsync(request);
+        if (listing == null)
             return BadRequest("Invalid UserId");
 
-        var newListing = new Listing
-        {
-            Title = request.Title,
-            Description = request.Description,
-            Price = request.Price,
-            Category = request.Category,
-            UserId = request.UserId,
-            Picture1 = request.Picture1,
-            Picture2 = request.Picture2,
-            Picture3 = request.Picture3,
-            Picture4 = request.Picture4,
-            Picture5 = request.Picture5,
-            Picture6 = request.Picture6,
-            Picture7 = request.Picture7,
-            Picture8 = request.Picture8,
-            Picture9 = request.Picture9,
-            Picture10 = request.Picture10,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _db.Listings.Add(newListing);
-        await _db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetListingById), new { id = newListing.Id }, newListing);
+        return CreatedAtAction(nameof(GetListingById), new { id = listing.Id }, listing);
     }
 
     [HttpPut("{id}")]
@@ -112,28 +83,9 @@ public class ListingsController : ControllerBase
         if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest("Invalid listing data");
 
-        var listing = await _db.Listings.FindAsync(id);
+        var listing = await _listingsService.UpdateListingAsync(id, request);
         if (listing == null)
             return NotFound();
-
-        listing.Title = request.Title;
-        listing.Description = request.Description;
-        listing.Price = request.Price;
-        listing.Category = request.Category;
-        listing.Picture1 = request.Picture1;
-        listing.Picture2 = request.Picture2;
-        listing.Picture3 = request.Picture3;
-        listing.Picture4 = request.Picture4;
-        listing.Picture5 = request.Picture5;
-        listing.Picture6 = request.Picture6;
-        listing.Picture7 = request.Picture7;
-        listing.Picture8 = request.Picture8;
-        listing.Picture9 = request.Picture9;
-        listing.Picture10 = request.Picture10;
-        listing.UpdatedAt = DateTime.UtcNow;
-
-        _db.Listings.Update(listing);
-        await _db.SaveChangesAsync();
 
         return Ok(listing);
     }
@@ -141,12 +93,9 @@ public class ListingsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteListing(int id)
     {
-        var listing = await _db.Listings.FindAsync(id);
-        if (listing == null)
+        var success = await _listingsService.DeleteListingAsync(id);
+        if (!success)
             return NotFound();
-
-        _db.Listings.Remove(listing);
-        await _db.SaveChangesAsync();
 
         return NoContent();
     }
@@ -154,34 +103,16 @@ public class ListingsController : ControllerBase
     [HttpGet("categories")]
     public async Task<ActionResult<List<string>>> GetCategories()
     {
-        var categories = await _db.Listings.Select(l => l.Category).Distinct().ToListAsync();
+        var categories = await _listingsService.GetCategoriesAsync();
         return Ok(categories);
     }
 
     [HttpGet("{id}/listings")]
     public async Task<ActionResult<IEnumerable<ListingSummaryResponse>>> GetUserListings(string id)
     {
-        var user = await _db.Users.FindAsync(id);
-        if (user == null)
-        {
+        var listings = await _listingsService.GetUserListingsAsync(id);
+        if (listings == null)
             return NotFound(new { Message = "User not found" });
-        }
-
-        var listings = await _db.Listings
-            .Where(l => l.UserId == id)
-            .Select(l => new ListingSummaryResponse
-            {
-                Id = l.Id,
-                Title = l.Title,
-                Description = l.Description,
-                Price = l.Price,
-                Category = l.Category,
-                UserId = l.UserId,
-                CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt,
-                Picture1 = l.Picture1
-            })
-            .ToListAsync();
 
         return Ok(listings);
     }

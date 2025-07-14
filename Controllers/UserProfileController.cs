@@ -1,4 +1,6 @@
+// UserProfileController.cs
 using MaltalistApi.Models;
+using MaltalistApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MaltalistApi.Controllers;
@@ -7,18 +9,17 @@ namespace MaltalistApi.Controllers;
 [Route("api/[controller]")]
 public class UserProfileController : ControllerBase
 {
-    private readonly MaltalistDbContext _db;
+    private readonly IUsersService _usersService;
 
-    public UserProfileController(MaltalistDbContext db)
+    public UserProfileController(IUsersService usersService)
     {
-        _db = db;
+        _usersService = usersService;
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<User>> GetUserProfile(string id)
     {
-        var user = await _db.Users.FindAsync(id);
-
+        var user = await _usersService.GetUserByIdAsync(id);
         if (user == null)
         {
             return NotFound(new { Message = "User not found" });
@@ -35,20 +36,11 @@ public class UserProfileController : ControllerBase
             return BadRequest(new { Message = "User ID mismatch" });
         }
 
-        var user = await _db.Users.FindAsync(id);
+        var user = await _usersService.UpdateUserAsync(id, updatedUser);
         if (user == null)
         {
             return NotFound(new { Message = "User not found" });
         }
-
-        user.UserName = updatedUser.UserName;
-        user.UserPicture = updatedUser.UserPicture;
-        user.Email = updatedUser.Email;
-        user.LastOnline = DateTime.UtcNow;
-        user.PhoneNumber = updatedUser.PhoneNumber;
-
-        _db.Users.Update(user);
-        await _db.SaveChangesAsync();
 
         return Ok(user);
     }
@@ -56,14 +48,11 @@ public class UserProfileController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteUserProfile(string id)
     {
-        var user = await _db.Users.FindAsync(id);
-        if (user == null)
+        var success = await _usersService.DeleteUserAsync(id);
+        if (!success)
         {
             return NotFound(new { Message = "User not found" });
         }
-
-        _db.Users.Remove(user);
-        await _db.SaveChangesAsync();
 
         return NoContent();
     }
@@ -79,12 +68,7 @@ public class UserProfileController : ControllerBase
             return BadRequest(new { Message = "Invalid user data" });
         }
 
-        newUser.CreatedAt = DateTime.UtcNow;
-        newUser.LastOnline = DateTime.UtcNow;
-
-        _db.Users.Add(newUser);
-        await _db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetUserProfile), new { id = newUser.Id }, newUser);
-    }    
+        var user = await _usersService.CreateUserAsync(newUser);
+        return CreatedAtAction(nameof(GetUserProfile), new { id = user.Id }, user);
+    }
 }
