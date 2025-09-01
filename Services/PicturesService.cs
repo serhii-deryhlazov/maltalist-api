@@ -1,4 +1,5 @@
 using MaltalistApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace MaltalistApi.Services;
 
@@ -28,7 +29,7 @@ public class PicturesService : IPicturesService
             if (file.Length > 0)
             {
                 var ext = Path.GetExtension(file.FileName);
-                var fileName = $"Picture{idx}{ext}";
+                var fileName = $"{idx}{ext}";
                 var filePath = Path.Combine(targetDir, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
@@ -36,10 +37,6 @@ public class PicturesService : IPicturesService
                     await file.CopyToAsync(stream);
                 }
                 savedFiles.Add(fileName);
-
-                var prop = typeof(Listing).GetProperty($"Picture{idx}");
-                if (prop != null)
-                    prop.SetValue(listing, $"/assets/img/listings/{listingId}/{fileName}");
 
                 idx++;
                 if (idx > 10) break;
