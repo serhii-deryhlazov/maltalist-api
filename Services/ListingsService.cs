@@ -74,6 +74,7 @@ public class ListingsService : IListingsService
             Price = request.Price,
             Category = request.Category,
             UserId = request.UserId,
+            Location = request.Location,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

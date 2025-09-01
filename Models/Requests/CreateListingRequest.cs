@@ -7,4 +7,5 @@ public class CreateListingRequest
     public decimal Price { get; set; }
     public string Category { get; set; }
     public string UserId { get; set; }
+    public string Location { get; set; }
 }
