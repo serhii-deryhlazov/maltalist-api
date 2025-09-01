@@ -20,8 +20,15 @@ public class ListingsController : ControllerBase
     [HttpGet("minimal")]
     public async Task<ActionResult<GetAllListingsResponse>> GetMinimalListingsPaginated([FromQuery] GetAllListingsRequest request)
     {
-        var result = await _listingsService.GetMinimalListingsPaginatedAsync(request);
-        return Ok(result);
+        try
+        {
+            var result = await _listingsService.GetMinimalListingsPaginatedAsync(request);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "An error occurred while processing your request.", Details = ex.Message });
+        }
     }
 
     [HttpGet("{id}")]

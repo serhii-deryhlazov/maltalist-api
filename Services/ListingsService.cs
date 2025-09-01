@@ -18,7 +18,9 @@ public class ListingsService : IListingsService
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            query = query.Where(l => l.Title.Contains(request.Search) || l.Description.Contains(request.Search));
+            query = query.Where(l =>
+                l.Title.Contains(request.Search)
+                || l.Description.Contains(request.Search));
         }
 
         if (!string.IsNullOrWhiteSpace(request.Category))
