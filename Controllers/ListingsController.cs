@@ -114,6 +114,22 @@ public class ListingsController : ControllerBase
         return Ok(categories);
     }
 
+    [HttpGet("{id}/pictures")]
+    public IActionResult GetListingImageUrls(int id)
+    {
+        var targetDir = $"/var/www/maltalist/ui/assets/img/listings/{id}";
+        if (!Directory.Exists(targetDir))
+            return NotFound("No pictures found for this listing.");
+
+        var files = Directory.GetFiles(targetDir)
+            .Select(Path.GetFileName)
+            .ToList();
+
+        var urls = files.Select(f => $"/assets/img/listings/{id}/{f}");
+
+        return Ok(urls);
+    }
+
     [HttpGet("{id}/listings")]
     public async Task<ActionResult<IEnumerable<ListingSummaryResponse>>> GetUserListings(string id)
     {
