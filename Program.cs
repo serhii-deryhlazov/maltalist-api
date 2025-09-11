@@ -21,6 +21,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped<IListingsService, ListingsService>();
 builder.Services.AddScoped<IPicturesService, PicturesService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 builder.Services.AddControllers();
 
