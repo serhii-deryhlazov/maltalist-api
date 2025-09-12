@@ -20,16 +20,8 @@ public class PicturesService : IPicturesService
         if (listing == null)
             throw new InvalidOperationException("Listing not found");
 
+        // Simply save the new files to the directory (they will be appended)
         var savedFiles = await _fileStorage.SaveFilesAsync(listingId, files);
-
-        int idx = 1;
-        foreach (var fileName in savedFiles)
-        {
-            var prop = typeof(Listing).GetProperty($"Picture{idx}");
-            if (prop != null)
-                prop.SetValue(listing, $"/assets/img/listings/{listingId}/{fileName}");
-            idx++;
-        }
 
         listing.UpdatedAt = DateTime.UtcNow;
         _db.Listings.Update(listing);
@@ -44,25 +36,11 @@ public class PicturesService : IPicturesService
         if (listing == null)
             throw new InvalidOperationException("Listing not found");
 
-        for (int i = 1; i <= 10; i++)
-        {
-            var prop = typeof(Listing).GetProperty($"Picture{i}");
-            if (prop != null)
-                prop.SetValue(listing, null);
-        }
-
+        // Delete all existing files in the directory
         await _fileStorage.DeleteFilesAsync(listingId);
 
+        // Save all new files from the request
         var savedFiles = await _fileStorage.SaveFilesAsync(listingId, files);
-
-        int idx = 1;
-        foreach (var fileName in savedFiles)
-        {
-            var prop = typeof(Listing).GetProperty($"Picture{idx}");
-            if (prop != null)
-                prop.SetValue(listing, $"/assets/img/listings/{listingId}/{fileName}");
-            idx++;
-        }
 
         listing.UpdatedAt = DateTime.UtcNow;
         _db.Listings.Update(listing);
