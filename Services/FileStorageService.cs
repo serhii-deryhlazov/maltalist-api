@@ -9,7 +9,7 @@ public class FileStorageService : IFileStorageService
 
     public FileStorageService(IConfiguration config)
     {
-        _basePath = config["FileStorage:BasePath"] ?? "/var/www/maltalist/ui/assets/img/listings";
+        _basePath = config["FileStorage:BasePath"] ?? "./images";
     }
 
     public async Task<List<string>> SaveFilesAsync(int listingId, IFormFileCollection files)

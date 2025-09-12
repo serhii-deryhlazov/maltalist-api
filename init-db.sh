@@ -36,5 +36,15 @@ CREATE INDEX IX_Listings_UserId ON Listings(UserId);
 CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
 EOSQL
 
+# Apply backup if exists
+if [ -f /backups/maltalist.sql ]; then
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} maltalist < /backups/maltalist.sql
+  echo "Backup applied successfully!"
+fi
+
+# Start backup script
+chmod +x /backup.sh
+nohup /backup.sh &
+
 # Make sure the script was executed successfully
 echo "Database initialization completed successfully!"

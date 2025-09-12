@@ -9,12 +9,10 @@ namespace MaltalistApi.Controllers;
 public class ListingsController : ControllerBase
 {
     private readonly IListingsService _listingsService;
-    private readonly IPicturesService _picturesService;
 
-    public ListingsController(IListingsService listingsService, IPicturesService picturesService)
+    public ListingsController(IListingsService listingsService)
     {
         _listingsService = listingsService;
-        _picturesService = picturesService;
     }
 
     [HttpGet("minimal")]
@@ -39,36 +37,6 @@ public class ListingsController : ControllerBase
             return NotFound();
 
         return Ok(listing);
-    }
-
-    [HttpPost("{id}/pictures")]
-    public async Task<IActionResult> AddListingPictures(int id)
-    {
-        var listing = await _listingsService.GetListingByIdAsync(id);
-        if (listing == null)
-            return NotFound();
-
-        var files = Request.Form.Files;
-        if (files == null || files.Count == 0)
-            return BadRequest("No files uploaded.");
-
-        var result = await _picturesService.AddListingPicturesAsync(id, files);
-        return Ok(new { Saved = result });
-    }
-
-    [HttpPut("{id}/pictures")]
-    public async Task<IActionResult> UpdateListingPictures(int id)
-    {
-        var listing = await _listingsService.GetListingByIdAsync(id);
-        if (listing == null)
-            return NotFound();
-
-        var files = Request.Form.Files;
-        if (files == null || files.Count == 0)
-            return BadRequest("No files uploaded.");
-
-        var result = await _picturesService.UpdateListingPicturesAsync(id, files);
-        return Ok(new { Updated = result });
     }
 
     [HttpPost]
@@ -112,22 +80,6 @@ public class ListingsController : ControllerBase
     {
         var categories = await _listingsService.GetCategoriesAsync();
         return Ok(categories);
-    }
-
-    [HttpGet("{id}/pictures")]
-    public IActionResult GetListingImageUrls(int id)
-    {
-        var targetDir = $"/var/www/maltalist/ui/assets/img/listings/{id}";
-        if (!Directory.Exists(targetDir))
-            return NotFound("No pictures found for this listing.");
-
-        var files = Directory.GetFiles(targetDir)
-            .Select(Path.GetFileName)
-            .ToList();
-
-        var urls = files.Select(f => $"/assets/img/listings/{id}/{f}");
-
-        return Ok(urls);
     }
 
     [HttpGet("{id}/listings")]
