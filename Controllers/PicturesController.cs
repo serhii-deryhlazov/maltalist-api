@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MaltalistApi.Services;
+using System.IO;
 
 namespace MaltalistApi.Controllers;
 
@@ -23,27 +24,19 @@ public class PicturesController : ControllerBase
         if (listing == null)
             return NotFound();
 
-        var files = Request.Form.Files;
-        if (files == null || files.Count == 0)
-            return BadRequest("No files uploaded.");
+        // Remove existing pictures before adding new ones
+        var targetDir = $"/images/{id}";
+        if (Directory.Exists(targetDir))
+        {
+            var existingFiles = Directory.GetFiles(targetDir);
+            foreach (var file in existingFiles)
+            {
+                System.IO.File.Delete(file);
+            }
+        }
 
-        var result = await _picturesService.AddListingPicturesAsync(id, files);
+        var result = await _picturesService.AddListingPicturesAsync(id, Request.Form.Files);
         return Ok(new { Saved = result });
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateListingPictures(int id)
-    {
-        var listing = await _listingsService.GetListingByIdAsync(id);
-        if (listing == null)
-            return NotFound();
-
-        var files = Request.Form.Files;
-        if (files == null || files.Count == 0)
-            return BadRequest("No files uploaded.");
-
-        var result = await _picturesService.UpdateListingPicturesAsync(id, files);
-        return Ok(new { Updated = result });
     }
 
     [HttpGet("{id}")]
@@ -55,9 +48,10 @@ public class PicturesController : ControllerBase
 
         var files = Directory.GetFiles(targetDir)
             .Select(Path.GetFileName)
+            .OrderBy(f => f)
             .ToList();
 
-        var urls = files.Select(f => $"/assets/img/listings/{id}/{f}").Reverse().ToList();
+        var urls = files.Select(f => $"/assets/img/listings/{id}/{f}").ToList();
 
         return Ok(urls);
     }

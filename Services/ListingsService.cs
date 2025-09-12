@@ -6,10 +6,12 @@ namespace MaltalistApi.Services;
 public class ListingsService : IListingsService
 {
     private readonly MaltalistDbContext _db;
+    private readonly IFileStorageService _fileStorage;
 
-    public ListingsService(MaltalistDbContext db)
+    public ListingsService(MaltalistDbContext db, IFileStorageService fileStorage)
     {
         _db = db;
+        _fileStorage = fileStorage;
     }
 
     public async Task<GetAllListingsResponse> GetMinimalListingsPaginatedAsync(GetAllListingsRequest request)
@@ -108,6 +110,9 @@ public class ListingsService : IListingsService
         var listing = await _db.Listings.FindAsync(id);
         if (listing == null)
             return false;
+
+        // Delete pictures from file storage
+        await _fileStorage.DeleteFilesAsync(id);
 
         _db.Listings.Remove(listing);
         await _db.SaveChangesAsync();
