@@ -6,6 +6,7 @@ public class GetAllListingsRequest
     public int Limit { get; set; } = 10;
     public string? Search { get; set; }
     public string? Category { get; set; }
-    public string? SortBy { get; set; }
-    public string? OrderBy { get; set; }
+    public string? Sort { get; set; }
+    public string? Order { get; set; }
+    public string? Location { get; set; }
 }
