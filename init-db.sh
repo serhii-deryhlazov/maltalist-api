@@ -36,10 +36,11 @@ CREATE INDEX IX_Listings_UserId ON Listings(UserId);
 CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
 EOSQL
 
-# Apply backup if exists
-if [ -f /backups/maltalist.sql ]; then
-  mysql -u root -p${MYSQL_ROOT_PASSWORD} maltalist < /backups/maltalist.sql
-  echo "Backup applied successfully!"
+# Apply freshest backup if exists
+latest_backup=$(ls -1 /backups/maltalist_*.sql 2>/dev/null | sort | tail -n 1)
+if [ -f "$latest_backup" ]; then
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} maltalist < "$latest_backup"
+  echo "Backup $latest_backup applied successfully!"
 fi
 
 # Start backup script
