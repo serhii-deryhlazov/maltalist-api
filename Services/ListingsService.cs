@@ -77,7 +77,8 @@ public class ListingsService : IListingsService
                 Category = l.Category,
                 UserId = l.UserId,
                 CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt
+                UpdatedAt = l.UpdatedAt,
+                Location = l.Location
             })
             .ToListAsync();
 
@@ -265,7 +266,8 @@ public class ListingsService : IListingsService
                 Category = l.Category,
                 UserId = l.UserId,
                 CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt
+                UpdatedAt = l.UpdatedAt,
+                Location = l.Location
             }).ToList();
 
             return new GetAllListingsResponse
@@ -291,7 +293,8 @@ public class ListingsService : IListingsService
                 Category = l.Category,
                 UserId = l.UserId,
                 CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt
+                UpdatedAt = l.UpdatedAt,
+                Location = l.Location
             }).ToList();
 
             return new GetAllListingsResponse

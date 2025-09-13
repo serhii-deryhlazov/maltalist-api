@@ -11,5 +11,6 @@ namespace MaltalistApi.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string Picture1 { get; set; }
+        public string Location { get; set; }
     }
 }
