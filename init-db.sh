@@ -30,10 +30,21 @@ CREATE TABLE IF NOT EXISTS Listings (
     FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 
+-- Create Promotions table
+CREATE TABLE IF NOT EXISTS Promotions (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    ListingId INT NOT NULL,
+    ExpirationDate DATETIME NOT NULL,
+    Category VARCHAR(100) NOT NULL,
+    FOREIGN KEY (ListingId) REFERENCES Listings(Id)
+);
+
 -- Create indexes
 CREATE INDEX IX_Listings_Category ON Listings(Category);
 CREATE INDEX IX_Listings_UserId ON Listings(UserId);
 CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
+CREATE INDEX IX_Promotions_Category ON Promotions(Category);
+CREATE INDEX IX_Promotions_ExpirationDate ON Promotions(ExpirationDate);
 EOSQL
 
 # Apply freshest backup if exists

@@ -10,12 +10,10 @@ namespace MaltalistApi.Controllers;
 public class ListingsController : ControllerBase
 {
     private readonly IListingsService _listingsService;
-    private readonly MaltalistDbContext _db;
 
-    public ListingsController(IListingsService listingsService, MaltalistDbContext db)
+    public ListingsController(IListingsService listingsService)
     {
         _listingsService = listingsService;
-        _db = db;
     }
 
     [HttpGet("minimal")]
