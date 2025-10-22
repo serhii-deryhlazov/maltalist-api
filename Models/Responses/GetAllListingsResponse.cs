@@ -2,7 +2,7 @@ namespace MaltalistApi.Models;
 
 public class GetAllListingsResponse
 {
-    public int TotalNumber { get; set; }
-    public List<ListingSummaryResponse> Listings { get; set; }
-    public int Page { get; set; }
+    public required List<ListingSummaryResponse> Listings { get; set; }
+    public required int TotalNumber { get; set; }
+    public required int Page { get; set; }
 }

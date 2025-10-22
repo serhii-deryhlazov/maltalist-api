@@ -15,7 +15,7 @@ namespace MaltalistApi.Models
 
         [Required]
         [StringLength(100)]
-        public string Category { get; set; }
+        public required string Category { get; set; }
 
         public Listing? Listing { get; set; }
     }

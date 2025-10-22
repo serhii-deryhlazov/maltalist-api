@@ -8,6 +8,7 @@ public interface IListingsService
     Task<Listing?> GetListingByIdAsync(int id);
     Task<Listing?> CreateListingAsync(CreateListingRequest request);
     Task<Listing?> UpdateListingAsync(int id, CreateListingRequest request);
+    Task UpdateListingAsync(Listing listing);
     Task<bool> DeleteListingAsync(int id);
     Task<List<string>> GetCategoriesAsync();
     Task<IEnumerable<ListingSummaryResponse>?> GetUserListingsAsync(string userId);

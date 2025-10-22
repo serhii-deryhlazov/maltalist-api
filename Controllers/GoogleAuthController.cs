@@ -17,7 +17,7 @@ public class GoogleAuthController : ControllerBase
 
     public class GoogleLoginRequest
     {
-        public string IdToken { get; set; }
+        public required string IdToken { get; set; }
     }
 
     [HttpPost("login")]

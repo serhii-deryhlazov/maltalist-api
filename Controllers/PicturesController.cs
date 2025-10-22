@@ -36,6 +36,7 @@ public class PicturesController : ControllerBase
         }
 
         var result = await _picturesService.AddListingPicturesAsync(id, Request.Form.Files);
+
         return Ok(new { Saved = result });
     }
 

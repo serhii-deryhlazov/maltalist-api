@@ -26,6 +26,26 @@ namespace MaltalistApi.Controllers
                 .Select(p => p.Listing)
                 .ToListAsync();
 
+            // Populate Picture1 with the first image URL
+            foreach (var l in promotedListings)
+            {
+                if (l != null)
+                {
+                    var picDir = $"/images/{l.Id}";
+                    if (Directory.Exists(picDir))
+                    {
+                        var files = Directory.GetFiles(picDir)
+                            .Select(Path.GetFileName)
+                            .OrderBy(f => f)
+                            .ToList();
+                        if (files.Any())
+                        {
+                            l.Picture1 = $"/assets/img/listings/{l.Id}/{files.First()}";
+                        }
+                    }
+                }
+            }
+
             return Ok(promotedListings);
         }
 

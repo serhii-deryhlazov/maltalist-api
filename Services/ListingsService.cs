@@ -21,8 +21,8 @@ public class ListingsService : IListingsService
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             query = query.Where(l =>
-                l.Title.Contains(request.Search)
-                || l.Description.Contains(request.Search));
+                (l.Title != null && l.Title.Contains(request.Search))
+                || (l.Description != null && l.Description.Contains(request.Search)));
         }
 
         if (!string.IsNullOrWhiteSpace(request.Category))
@@ -78,9 +78,27 @@ public class ListingsService : IListingsService
                 UserId = l.UserId,
                 CreatedAt = l.CreatedAt,
                 UpdatedAt = l.UpdatedAt,
-                Location = l.Location
+                Location = l.Location,
+                Picture = null
             })
             .ToListAsync();
+
+        // Populate Picture with the first image URL
+        foreach (var l in listings)
+        {
+            var picDir = $"/images/{l.Id}";
+            if (Directory.Exists(picDir))
+            {
+                var files = Directory.GetFiles(picDir)
+                    .Select(Path.GetFileName)
+                    .OrderBy(f => f)
+                    .ToList();
+                if (files.Any())
+                {
+                    l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
+                }
+            }
+        }
 
         return new GetAllListingsResponse
         {
@@ -137,6 +155,12 @@ public class ListingsService : IListingsService
         return listing;
     }
 
+    public async Task UpdateListingAsync(Listing listing)
+    {
+        _db.Listings.Update(listing);
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<bool> DeleteListingAsync(int id)
     {
         var listing = await _db.Listings.FindAsync(id);
@@ -163,7 +187,7 @@ public class ListingsService : IListingsService
         if (user == null)
             return null;
 
-        return await _db.Listings
+        var listings = await _db.Listings
             .Where(l => l.UserId == userId)
             .Select(l => new ListingSummaryResponse
             {
@@ -174,9 +198,30 @@ public class ListingsService : IListingsService
                 Category = l.Category,
                 UserId = l.UserId,
                 CreatedAt = l.CreatedAt,
-                UpdatedAt = l.UpdatedAt
+                UpdatedAt = l.UpdatedAt,
+                Location = l.Location,
+                Picture = null
             })
             .ToListAsync();
+
+        // Populate Picture with the first image URL
+        foreach (var l in listings)
+        {
+            var picDir = $"/images/{l.Id}";
+            if (Directory.Exists(picDir))
+            {
+                var files = Directory.GetFiles(picDir)
+                    .Select(Path.GetFileName)
+                    .OrderBy(f => f)
+                    .ToList();
+                if (files.Any())
+                {
+                    l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
+                }
+            }
+        }
+
+        return listings;
     }
 
     private async Task<GetAllListingsResponse> GetSortedByDistanceAsync(GetAllListingsRequest request)
@@ -245,11 +290,11 @@ public class ListingsService : IListingsService
             ["Gozo - Zebbug"] = (36.0722, 14.2358)
         };
 
-        if (locationCoords.TryGetValue(request.Location, out var userCoord))
+        if (locationCoords.TryGetValue(request.Location!, out var userCoord))
         {
             var sorted = allListings.Select(l =>
             {
-                var coord = locationCoords.TryGetValue(l.Location, out var c) ? c : userCoord;
+                var coord = locationCoords.TryGetValue(l.Location!, out var c) ? c : userCoord;
                 var distance = Haversine(userCoord.Item1, userCoord.Item2, coord.Item1, coord.Item2);
                 return new { Listing = l, Distance = distance };
             }).OrderBy(x => x.Distance).Select(x => x.Listing).ToList();
