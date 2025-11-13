@@ -11,6 +11,9 @@ public class Listing
     public required string Category { get; set; }
     public required string Location { get; set; }
     public required string UserId { get; set; }
+    public bool ShowPhone { get; set; } = false;
+    public bool Complete { get; set; } = false;
+    public bool Lease { get; set; } = false;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     [NotMapped]

@@ -8,4 +8,7 @@ public class CreateListingRequest
     public required string Category { get; set; }
     public required string UserId { get; set; }
     public required string Location { get; set; }
+    public bool ShowPhone { get; set; } = false;
+    public bool Complete { get; set; } = false;
+    public bool Lease { get; set; } = false;
 }
