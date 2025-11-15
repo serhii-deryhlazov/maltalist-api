@@ -126,14 +126,17 @@ public class ListingsServiceTests
         context.Listings.Add(listing);
         await context.SaveChangesAsync();
 
-        var updateRequest = new CreateListingRequest
+        var updateRequest = new UpdateListingRequest
         {
+            Id = listing.Id,
             Title = "New Title",
             Description = "New Desc",
             Price = 75m,
             Category = "Books",
             Location = "Valletta",
-            UserId = "user1"
+            ShowPhone = false,
+            Complete = false,
+            Lease = false
         };
 
         var result = await service.UpdateListingAsync(listing.Id, updateRequest);
@@ -176,8 +179,8 @@ public class ListingsServiceTests
         var service = new ListingsService(context, new FakeFileStorageService());
 
         context.Listings.AddRange(
-            new Listing { Title = "Book", Description = "A book", Price = 10m, Category = "Books", Location = "Valletta", UserId = "user1", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new Listing { Title = "Phone", Description = "A phone", Price = 200m, Category = "Electronics", Location = "Sliema", UserId = "user1", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+            new Listing { Title = "Book", Description = "A book", Price = 10m, Category = "Books", Location = "Valletta", UserId = "user1", Approved = true, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new Listing { Title = "Phone", Description = "A phone", Price = 200m, Category = "Electronics", Location = "Sliema", UserId = "user1", Approved = true, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
         );
         await context.SaveChangesAsync();
 
@@ -196,8 +199,8 @@ public class ListingsServiceTests
         var service = new ListingsService(context, new FakeFileStorageService());
 
         context.Listings.AddRange(
-            new Listing { Title = "iPhone 12", Description = "Great phone", Price = 500m, Category = "Electronics", Location = "Valletta", UserId = "user1", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new Listing { Title = "Samsung TV", Description = "Big screen", Price = 800m, Category = "Electronics", Location = "Sliema", UserId = "user1", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+            new Listing { Title = "iPhone 12", Description = "Great phone", Price = 500m, Category = "Electronics", Location = "Valletta", UserId = "user1", Approved = true, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new Listing { Title = "Samsung TV", Description = "Big screen", Price = 800m, Category = "Electronics", Location = "Sliema", UserId = "user1", Approved = true, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
         );
         await context.SaveChangesAsync();
 
@@ -225,6 +228,7 @@ public class ListingsServiceTests
                 Category = "Books",
                 Location = "Valletta",
                 UserId = "user1",
+                Approved = true,
                 CreatedAt = DateTime.UtcNow.AddMinutes(-i),
                 UpdatedAt = DateTime.UtcNow
             });
