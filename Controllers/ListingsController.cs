@@ -54,7 +54,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<Listing>> UpdateListing(int id, [FromBody] CreateListingRequest request)
+    public async Task<ActionResult<Listing>> UpdateListing(int id, [FromBody] UpdateListingRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest("Invalid listing data");

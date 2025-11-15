@@ -127,6 +127,7 @@ public class ListingsService : IListingsService
             Category = request.Category,
             UserId = request.UserId,
             Location = request.Location,
+            Lease = request.Lease,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -137,7 +138,7 @@ public class ListingsService : IListingsService
         return newListing;
     }
 
-    public async Task<Listing?> UpdateListingAsync(int id, CreateListingRequest request)
+    public async Task<Listing?> UpdateListingAsync(int id, UpdateListingRequest request)
     {
         var listing = await _db.Listings.FindAsync(id);
         if (listing == null)
@@ -147,6 +148,9 @@ public class ListingsService : IListingsService
         listing.Description = request.Description;
         listing.Price = request.Price;
         listing.Category = request.Category;
+        listing.Location = request.Location;
+        listing.Complete = request.Complete;
+        listing.Lease = request.Lease;
         listing.UpdatedAt = DateTime.UtcNow;
 
         _db.Listings.Update(listing);
