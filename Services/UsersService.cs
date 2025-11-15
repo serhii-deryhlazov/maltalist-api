@@ -1,4 +1,5 @@
 using MaltalistApi.Models;
+using MaltalistApi.Helpers;
 
 namespace MaltalistApi.Services;
 
@@ -22,11 +23,11 @@ public class UsersService : IUsersService
         if (user == null)
             return null;
 
-        user.UserName = updatedUser.UserName;
-        user.UserPicture = updatedUser.UserPicture;
-        user.Email = updatedUser.Email;
+        user.UserName = InputSanitizer.SanitizeHtml(updatedUser.UserName);
+        user.UserPicture = InputSanitizer.SanitizeUrl(updatedUser.UserPicture) ?? user.UserPicture;
+        user.Email = InputSanitizer.SanitizeEmail(updatedUser.Email) ?? user.Email;
         user.LastOnline = DateTime.UtcNow;
-        user.PhoneNumber = updatedUser.PhoneNumber;
+        user.PhoneNumber = InputSanitizer.SanitizeText(updatedUser.PhoneNumber);
 
         _db.Users.Update(user);
         await _db.SaveChangesAsync();
@@ -48,6 +49,12 @@ public class UsersService : IUsersService
 
     public async Task<User> CreateUserAsync(User newUser)
     {
+        newUser.UserName = InputSanitizer.SanitizeHtml(newUser.UserName);
+        var sanitizedPicture = InputSanitizer.SanitizeUrl(newUser.UserPicture);
+        if (sanitizedPicture != null)
+            newUser.UserPicture = sanitizedPicture;
+        newUser.Email = InputSanitizer.SanitizeEmail(newUser.Email) ?? newUser.Email;
+        newUser.PhoneNumber = InputSanitizer.SanitizeText(newUser.PhoneNumber);
         newUser.CreatedAt = DateTime.UtcNow;
         newUser.LastOnline = DateTime.UtcNow;
 

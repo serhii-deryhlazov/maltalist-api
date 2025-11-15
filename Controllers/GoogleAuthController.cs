@@ -1,18 +1,22 @@
 using Google.Apis.Auth;
 using MaltalistApi.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace MaltalistApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting("auth")]
 public class GoogleAuthController : ControllerBase
 {
     private readonly MaltalistDbContext _db;
+    private readonly ILogger<GoogleAuthController> _logger;
 
-    public GoogleAuthController(MaltalistDbContext db)
+    public GoogleAuthController(MaltalistDbContext db, ILogger<GoogleAuthController> logger)
     {
         _db = db;
+        _logger = logger;
     }
 
     public class GoogleLoginRequest
@@ -23,15 +27,47 @@ public class GoogleAuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<User>> LoginWithGoogle([FromBody] GoogleLoginRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            return BadRequest(new { Message = "ID token is required" });
+        }
+
         GoogleJsonWebSignature.Payload payload;
 
         try
         {
-            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+            // Validate token with specific settings
+            var settings = new GoogleJsonWebSignature.ValidationSettings
+            {
+                // Add audience validation if you have a specific client ID
+                // Audience = new[] { "your-client-id.apps.googleusercontent.com" }
+            };
+            
+            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+            
+            // Verify token expiration
+            var expirationTime = DateTimeOffset.FromUnixTimeSeconds(payload.ExpirationTimeSeconds ?? 0);
+            if (expirationTime < DateTimeOffset.UtcNow)
+            {
+                return Unauthorized(new { Message = "Token has expired" });
+            }
+
+            // Verify issued time (token should not be too old)
+            var issuedTime = DateTimeOffset.FromUnixTimeSeconds(payload.IssuedAtTimeSeconds ?? 0);
+            if (DateTimeOffset.UtcNow - issuedTime > TimeSpan.FromMinutes(10))
+            {
+                return Unauthorized(new { Message = "Token is too old" });
+            }
         }
-        catch (InvalidJwtException)
+        catch (InvalidJwtException ex)
         {
+            _logger.LogWarning(ex, "Invalid JWT token received");
             return Unauthorized(new { Message = "Invalid Google ID token" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating Google token");
+            return Unauthorized(new { Message = "Authentication failed" });
         }
 
         var userId = payload.Subject;

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MaltalistApi.Models;
+using MaltalistApi.Helpers;
 
 namespace MaltalistApi.Services;
 
@@ -121,12 +122,12 @@ public class ListingsService : IListingsService
 
         var newListing = new Listing
         {
-            Title = request.Title,
-            Description = request.Description,
+            Title = InputSanitizer.SanitizeHtml(request.Title),
+            Description = InputSanitizer.SanitizeHtml(request.Description),
             Price = request.Price,
-            Category = request.Category,
+            Category = InputSanitizer.SanitizeText(request.Category),
             UserId = request.UserId,
-            Location = request.Location,
+            Location = InputSanitizer.SanitizeText(request.Location),
             Lease = request.Lease,
             Approved = false,
             CreatedAt = DateTime.UtcNow,
@@ -145,11 +146,11 @@ public class ListingsService : IListingsService
         if (listing == null)
             return null;
 
-        listing.Title = request.Title;
-        listing.Description = request.Description;
+        listing.Title = InputSanitizer.SanitizeHtml(request.Title);
+        listing.Description = InputSanitizer.SanitizeHtml(request.Description);
         listing.Price = request.Price;
-        listing.Category = request.Category;
-        listing.Location = request.Location;
+        listing.Category = InputSanitizer.SanitizeText(request.Category);
+        listing.Location = InputSanitizer.SanitizeText(request.Location);
         listing.Complete = request.Complete;
         listing.Lease = request.Lease;
         listing.Approved = false;

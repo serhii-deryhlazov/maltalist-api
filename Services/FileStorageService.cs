@@ -6,6 +6,9 @@ namespace MaltalistApi.Services;
 public class FileStorageService : IFileStorageService
 {
     private readonly string _basePath;
+    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+    private static readonly string[] AllowedMimeTypes = { "image/jpeg", "image/png", "image/gif", "image/webp" };
 
     public FileStorageService(IConfiguration config)
     {
@@ -24,7 +27,25 @@ public class FileStorageService : IFileStorageService
         {
             if (file.Length > 0)
             {
-                var ext = Path.GetExtension(file.FileName);
+                // Validate file size
+                if (file.Length > MaxFileSize)
+                {
+                    throw new InvalidOperationException($"File {file.FileName} exceeds maximum size of 5MB");
+                }
+
+                // Validate file extension
+                var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!AllowedExtensions.Contains(ext))
+                {
+                    throw new InvalidOperationException($"File type {ext} is not allowed. Only image files are permitted.");
+                }
+
+                // Validate MIME type
+                if (!AllowedMimeTypes.Contains(file.ContentType.ToLowerInvariant()))
+                {
+                    throw new InvalidOperationException($"Invalid file type. Only image files are permitted.");
+                }
+
                 var fileName = $"Picture{idx}{ext}";
                 var filePath = Path.Combine(targetDir, fileName);
 
