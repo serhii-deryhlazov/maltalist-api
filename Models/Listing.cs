@@ -14,6 +14,7 @@ public class Listing
     public bool ShowPhone { get; set; } = false;
     public bool Complete { get; set; } = false;
     public bool Lease { get; set; } = false;
+    public bool Approved { get; set; } = false;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     [NotMapped]

@@ -16,7 +16,7 @@ public class ListingsService : IListingsService
 
     public async Task<GetAllListingsResponse> GetMinimalListingsPaginatedAsync(GetAllListingsRequest request)
     {
-        var query = _db.Listings.AsQueryable();
+        var query = _db.Listings.Where(l => l.Approved == true).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -128,6 +128,7 @@ public class ListingsService : IListingsService
             UserId = request.UserId,
             Location = request.Location,
             Lease = request.Lease,
+            Approved = false,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -151,6 +152,7 @@ public class ListingsService : IListingsService
         listing.Location = request.Location;
         listing.Complete = request.Complete;
         listing.Lease = request.Lease;
+        listing.Approved = false;
         listing.UpdatedAt = DateTime.UtcNow;
 
         _db.Listings.Update(listing);
