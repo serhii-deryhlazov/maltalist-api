@@ -71,4 +71,28 @@ public class UserProfileController : ControllerBase
         var user = await _usersService.CreateUserAsync(newUser);
         return CreatedAtAction(nameof(GetUserProfile), new { id = user.Id }, user);
     }
+
+    [HttpPost("{id}/picture")]
+    public async Task<IActionResult> UploadProfilePicture(string id)
+    {
+        try
+        {
+            var user = await _usersService.GetUserByIdAsync(id);
+            if (user == null)
+                return NotFound(new { Message = "User not found" });
+
+            // Validate that a file was provided
+            if (Request.Form.Files.Count == 0)
+                return BadRequest(new { Message = "No file provided" });
+
+            var file = Request.Form.Files[0];
+            var result = await _usersService.UploadUserProfilePictureAsync(id, file);
+
+            return Ok(new { PictureUrl = result });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { Error = ex.Message });
+        }
+    }
 }
