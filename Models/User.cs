@@ -9,4 +9,6 @@ public class User
     public required string Email { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime LastOnline { get; set; }
+    public DateTime? ConsentTimestamp { get; set; }
+    public bool IsActive { get; set; } = true;
 }

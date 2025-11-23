@@ -2,6 +2,8 @@ using Xunit;
 using Microsoft.EntityFrameworkCore;
 using MaltalistApi.Models;
 using MaltalistApi.Services;
+using Moq;
+using System.Net.Http;
 
 namespace MaltalistApi.Tests;
 
@@ -19,7 +21,8 @@ public class UsersServiceTests
     public async Task GetUserByIdAsync_ReturnsUser_WhenExists()
     {
         using var context = CreateContext();
-        var service = new UsersService(context);
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var service = new UsersService(context, mockHttpClientFactory.Object);
 
         var user = new User
         {
@@ -44,7 +47,8 @@ public class UsersServiceTests
     public async Task GetUserByIdAsync_ReturnsNull_WhenNotExists()
     {
         using var context = CreateContext();
-        var service = new UsersService(context);
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var service = new UsersService(context, mockHttpClientFactory.Object);
 
         var result = await service.GetUserByIdAsync("nonexistent");
 
@@ -55,7 +59,8 @@ public class UsersServiceTests
     public async Task CreateUserAsync_CreatesNewUser()
     {
         using var context = CreateContext();
-        var service = new UsersService(context);
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var service = new UsersService(context, mockHttpClientFactory.Object);
 
         var newUser = new User
         {
@@ -80,7 +85,8 @@ public class UsersServiceTests
     public async Task UpdateUserAsync_UpdatesExistingUser()
     {
         var context = CreateContext();
-        var service = new UsersService(context);
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var service = new UsersService(context, mockHttpClientFactory.Object);
 
         var existingUser = new User
         {
@@ -118,7 +124,8 @@ public class UsersServiceTests
     public async Task DeleteUserAsync_DeletesUser()
     {
         using var context = CreateContext();
-        var service = new UsersService(context);
+        var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        var service = new UsersService(context, mockHttpClientFactory.Object);
 
         var user = new User
         {

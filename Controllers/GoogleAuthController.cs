@@ -1,5 +1,6 @@
 using Google.Apis.Auth;
 using MaltalistApi.Models;
+using MaltalistApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -12,11 +13,13 @@ public class GoogleAuthController : ControllerBase
 {
     private readonly MaltalistDbContext _db;
     private readonly ILogger<GoogleAuthController> _logger;
+    private readonly IUsersService _usersService;
 
-    public GoogleAuthController(MaltalistDbContext db, ILogger<GoogleAuthController> logger)
+    public GoogleAuthController(MaltalistDbContext db, ILogger<GoogleAuthController> logger, IUsersService usersService)
     {
         _db = db;
         _logger = logger;
+        _usersService = usersService;
     }
 
     public class GoogleLoginRequest
@@ -84,6 +87,16 @@ public class GoogleAuthController : ControllerBase
                 CreatedAt = DateTime.UtcNow,
                 LastOnline = DateTime.UtcNow
             };
+
+            // Try to download and save Google profile picture locally
+            if (!string.IsNullOrEmpty(payload.Picture))
+            {
+                var localPictureUrl = await _usersService.DownloadAndSaveGoogleProfilePictureAsync(userId, payload.Picture);
+                if (localPictureUrl != null)
+                {
+                    user.UserPicture = localPictureUrl;
+                }
+            }
 
             _db.Users.Add(user);
             await _db.SaveChangesAsync();

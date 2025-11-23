@@ -5,6 +5,7 @@ using MaltalistApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
+using MaltalistApi.Services;
 
 namespace MaltalistApi.Tests.Controllers;
 
@@ -24,7 +25,8 @@ public class GoogleAuthControllerTests
         // Arrange
         using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
-        var controller = new GoogleAuthController(context, mockLogger.Object);
+        var mockUsersService = new Mock<IUsersService>();
+        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = null! };
 
         // Act
@@ -40,7 +42,8 @@ public class GoogleAuthControllerTests
         // Arrange
         using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
-        var controller = new GoogleAuthController(context, mockLogger.Object);
+        var mockUsersService = new Mock<IUsersService>();
+        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = "" };
 
         // Act
@@ -56,7 +59,8 @@ public class GoogleAuthControllerTests
         // Arrange
         using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
-        var controller = new GoogleAuthController(context, mockLogger.Object);
+        var mockUsersService = new Mock<IUsersService>();
+        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = "   " };
 
         // Act
@@ -72,7 +76,8 @@ public class GoogleAuthControllerTests
         // Arrange
         using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
-        var controller = new GoogleAuthController(context, mockLogger.Object);
+        var mockUsersService = new Mock<IUsersService>();
+        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = "invalid-token" };
 
         // Act

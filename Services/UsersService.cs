@@ -6,10 +6,12 @@ namespace MaltalistApi.Services;
 public class UsersService : IUsersService
 {
     private readonly MaltalistDbContext _db;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public UsersService(MaltalistDbContext db)
+    public UsersService(MaltalistDbContext db, IHttpClientFactory httpClientFactory)
     {
         _db = db;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<User?> GetUserByIdAsync(string id)
@@ -123,5 +125,122 @@ public class UsersService : IUsersService
         }
 
         return $"/assets/img/users/{userId}/{fileName}";
+    }
+
+    public async Task<object> GetUserDataExportAsync(string id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null)
+            return new { };
+
+        var userListings = _db.Listings
+            .Where(l => l.UserId == id)
+            .Select(l => new
+            {
+                l.Id,
+                l.Title,
+                l.Description,
+                l.Price,
+                l.Category,
+                l.Location,
+                l.ShowPhone,
+                l.Complete,
+                l.Lease,
+                l.Approved,
+                l.CreatedAt,
+                l.UpdatedAt
+            })
+            .ToList();
+
+        return new
+        {
+            User = new
+            {
+                user.Id,
+                user.UserName,
+                user.Email,
+                user.PhoneNumber,
+                user.UserPicture,
+                user.CreatedAt,
+                user.LastOnline,
+                user.ConsentTimestamp
+            },
+            Listings = userListings,
+            ExportDate = DateTime.UtcNow
+        };
+    }
+
+    public async Task<bool> DeactivateUserAsync(string id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null)
+            return false;
+
+        user.IsActive = false;
+        _db.Users.Update(user);
+        await _db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> ActivateUserAsync(string id)
+    {
+        var user = await _db.Users.FindAsync(id);
+        if (user == null)
+            return false;
+
+        user.IsActive = true;
+        _db.Users.Update(user);
+        await _db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<string?> DownloadAndSaveGoogleProfilePictureAsync(string userId, string imageUrl)
+    {
+        if (string.IsNullOrEmpty(imageUrl)) return null;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetAsync(imageUrl);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            var ext = contentType switch
+            {
+                "image/jpeg" => ".jpg",
+                "image/png" => ".png",
+                "image/gif" => ".gif",
+                "image/webp" => ".webp",
+                _ => ".jpg" // Default fallback
+            };
+
+            var userDir = Path.Combine("/images/users", userId);
+            if (!Directory.Exists(userDir))
+                Directory.CreateDirectory(userDir);
+
+            // Delete old profile picture if exists
+            var existingFiles = Directory.GetFiles(userDir);
+            foreach (var existingFile in existingFiles)
+            {
+                File.Delete(existingFile);
+            }
+
+            var fileName = $"profile{ext}";
+            var filePath = Path.Combine(userDir, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await response.Content.CopyToAsync(stream);
+            }
+
+            return $"/assets/img/users/{userId}/{fileName}";
+        }
+        catch
+        {
+            // If download fails, return null so we can fallback to original URL or placeholder
+            return null;
+        }
     }
 }

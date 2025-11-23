@@ -11,6 +11,8 @@ builder.Services.AddDbContext<MaltalistDbContext>(options =>
     options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
 
+builder.Services.AddHttpClient();
+
 // Configure CORS with specific origins
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
     ?? new[] { "http://localhost", "http://localhost:80" };

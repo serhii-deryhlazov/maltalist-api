@@ -95,4 +95,43 @@ public class UserProfileController : ControllerBase
             return BadRequest(new { Error = ex.Message });
         }
     }
+
+    [HttpGet("{id}/export")]
+    public async Task<ActionResult> ExportUserData(string id)
+    {
+        var user = await _usersService.GetUserByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found" });
+        }
+
+        var userData = await _usersService.GetUserDataExportAsync(id);
+        return Ok(userData);
+    }
+
+    [HttpPost("{id}/deactivate")]
+    public async Task<ActionResult> DeactivateAccount(string id)
+    {
+        var user = await _usersService.GetUserByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found" });
+        }
+
+        var success = await _usersService.DeactivateUserAsync(id);
+        return Ok(new { Message = "Account deactivated successfully" });
+    }
+
+    [HttpPost("{id}/activate")]
+    public async Task<ActionResult> ActivateAccount(string id)
+    {
+        var user = await _usersService.GetUserByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found" });
+        }
+
+        var success = await _usersService.ActivateUserAsync(id);
+        return Ok(new { Message = "Account activated successfully" });
+    }
 }

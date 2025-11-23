@@ -9,4 +9,8 @@ public interface IUsersService
     Task<bool> DeleteUserAsync(string id);
     Task<User> CreateUserAsync(User newUser);
     Task<string> UploadUserProfilePictureAsync(string userId, IFormFile file);
+    Task<object> GetUserDataExportAsync(string id);
+    Task<bool> DeactivateUserAsync(string id);
+    Task<bool> ActivateUserAsync(string id);
+    Task<string?> DownloadAndSaveGoogleProfilePictureAsync(string userId, string imageUrl);
 }
