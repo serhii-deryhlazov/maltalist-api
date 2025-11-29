@@ -52,22 +52,46 @@ CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
 CREATE INDEX IX_Promotions_Category ON Promotions(Category);
 CREATE INDEX IX_Promotions_ExpirationDate ON Promotions(ExpirationDate);
 
--- Insert E2E test user for automated testing
+-- Insert E2E test users for automated testing
 INSERT INTO Users (Id, UserName, Email, UserPicture, PhoneNumber, CreatedAt, LastOnline, ConsentTimestamp, IsActive)
-VALUES (
-    'e2e-test-user-1',
-    'Test User One',
-    'testuser1@maltalist.test',
-    '/assets/img/users/test-user-1.jpg',
-    '+356 2123 4567',
-    NOW(),
-    NOW(),
-    NOW(),
-    TRUE
-)
+VALUES 
+    (
+        'e2e-test-user-1',
+        'Test User One',
+        'testuser1@maltalist.test',
+        '/assets/img/users/test-user-1.jpg',
+        '+356 2123 4567',
+        NOW(),
+        NOW(),
+        NOW(),
+        TRUE
+    ),
+    (
+        'e2e-test-user-2',
+        'Test User Two',
+        'testuser2@maltalist.test',
+        '/assets/img/users/test-user-2.jpg',
+        '+356 2123 4568',
+        NOW(),
+        NOW(),
+        NOW(),
+        TRUE
+    ),
+    (
+        'e2e-test-seller',
+        'Test Seller',
+        'seller@maltalist.test',
+        '/assets/img/users/test-seller.jpg',
+        '+356 9999 8888',
+        NOW(),
+        NOW(),
+        NOW(),
+        TRUE
+    )
 ON DUPLICATE KEY UPDATE 
-    UserName = 'Test User One',
-    Email = 'testuser1@maltalist.test',
+    UserName = VALUES(UserName),
+    Email = VALUES(Email),
+    PhoneNumber = VALUES(PhoneNumber),
     IsActive = TRUE;
 EOSQL
 
