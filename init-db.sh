@@ -51,6 +51,24 @@ CREATE INDEX IX_Listings_UserId ON Listings(UserId);
 CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
 CREATE INDEX IX_Promotions_Category ON Promotions(Category);
 CREATE INDEX IX_Promotions_ExpirationDate ON Promotions(ExpirationDate);
+
+-- Insert E2E test user for automated testing
+INSERT INTO Users (Id, UserName, Email, UserPicture, PhoneNumber, CreatedAt, LastOnline, ConsentTimestamp, IsActive)
+VALUES (
+    'e2e-test-user-1',
+    'Test User One',
+    'testuser1@maltalist.test',
+    '/assets/img/users/test-user-1.jpg',
+    '+356 2123 4567',
+    NOW(),
+    NOW(),
+    NOW(),
+    TRUE
+)
+ON DUPLICATE KEY UPDATE 
+    UserName = 'Test User One',
+    Email = 'testuser1@maltalist.test',
+    IsActive = TRUE;
 EOSQL
 
 # Apply freshest backup if exists
