@@ -87,7 +87,7 @@ public class ListingsService : IListingsService
         // Populate Picture with the first image URL
         foreach (var l in listings)
         {
-            var picDir = $"/images/{l.Id}";
+            var picDir = $"/images/listings/{l.Id}";
             if (Directory.Exists(picDir))
             {
                 var files = Directory.GetFiles(picDir)
@@ -216,7 +216,7 @@ public class ListingsService : IListingsService
         // Populate Picture with the first image URL
         foreach (var l in listings)
         {
-            var picDir = $"/images/{l.Id}";
+            var picDir = $"/images/listings/{l.Id}";
             if (Directory.Exists(picDir))
             {
                 var files = Directory.GetFiles(picDir)

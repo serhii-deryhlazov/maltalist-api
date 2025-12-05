@@ -17,7 +17,7 @@ public class FileStorageService : IFileStorageService
 
     public async Task<List<string>> SaveFilesAsync(int listingId, IFormFileCollection files)
     {
-        var targetDir = Path.Combine(_basePath, listingId.ToString());
+        var targetDir = Path.Combine(_basePath, "listings", listingId.ToString());
         if (!Directory.Exists(targetDir))
             Directory.CreateDirectory(targetDir);
 
@@ -64,7 +64,7 @@ public class FileStorageService : IFileStorageService
 
     public Task DeleteFilesAsync(int listingId)
     {
-        var targetDir = Path.Combine(_basePath, listingId.ToString());
+        var targetDir = Path.Combine(_basePath, "listings", listingId.ToString());
         if (Directory.Exists(targetDir))
         {
             Directory.Delete(targetDir, true);
