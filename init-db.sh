@@ -81,7 +81,7 @@ VALUES
         'e2e-test-seller',
         'Test Seller',
         'seller@maltalist.test',
-        '/assets/img/users/test-seller.jpg',
+        '',
         '+356 9999 8888',
         NOW(),
         NOW(),
@@ -91,6 +91,7 @@ VALUES
 ON DUPLICATE KEY UPDATE 
     UserName = VALUES(UserName),
     Email = VALUES(Email),
+    UserPicture = VALUES(UserPicture),
     PhoneNumber = VALUES(PhoneNumber),
     IsActive = TRUE;
 EOSQL

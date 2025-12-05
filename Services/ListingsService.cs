@@ -128,6 +128,8 @@ public class ListingsService : IListingsService
             Category = InputSanitizer.SanitizeText(request.Category),
             UserId = request.UserId,
             Location = InputSanitizer.SanitizeText(request.Location),
+            ShowPhone = request.ShowPhone,
+            Complete = request.Complete,
             Lease = request.Lease,
             Approved = false,
             CreatedAt = DateTime.UtcNow,
