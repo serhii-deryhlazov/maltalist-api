@@ -51,8 +51,20 @@ CREATE INDEX IX_Listings_UserId ON Listings(UserId);
 CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
 CREATE INDEX IX_Promotions_Category ON Promotions(Category);
 CREATE INDEX IX_Promotions_ExpirationDate ON Promotions(ExpirationDate);
+EOSQL
 
--- Insert E2E test users for automated testing
+# Apply freshest backup if exists
+latest_backup=$(ls -1 /backups/maltalist_*.sql 2>/dev/null | sort | tail -n 1)
+if [ -f "$latest_backup" ]; then
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} maltalist < "$latest_backup"
+  echo "Backup $latest_backup applied successfully!"
+fi
+
+# Insert E2E test users AFTER backup restore to ensure they always exist
+echo "Inserting E2E test users..."
+mysql -u root -p${MYSQL_ROOT_PASSWORD} <<EOSQL
+USE maltalist;
+
 INSERT INTO Users (Id, UserName, Email, UserPicture, PhoneNumber, CreatedAt, LastOnline, ConsentTimestamp, IsActive)
 VALUES 
     (
@@ -95,13 +107,7 @@ ON DUPLICATE KEY UPDATE
     PhoneNumber = VALUES(PhoneNumber),
     IsActive = TRUE;
 EOSQL
-
-# Apply freshest backup if exists
-latest_backup=$(ls -1 /backups/maltalist_*.sql 2>/dev/null | sort | tail -n 1)
-if [ -f "$latest_backup" ]; then
-  mysql -u root -p${MYSQL_ROOT_PASSWORD} maltalist < "$latest_backup"
-  echo "Backup $latest_backup applied successfully!"
-fi
+echo "E2E test users ready!"
 
 # Start backup script
 chmod +x /backup.sh
