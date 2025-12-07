@@ -2,6 +2,7 @@
 set -e
 
 mysql -u root -p${MYSQL_ROOT_PASSWORD} <<EOSQL
+CREATE DATABASE IF NOT EXISTS maltalist;
 USE maltalist;
 
 -- Create Users table
@@ -60,54 +61,64 @@ if [ -f "$latest_backup" ]; then
   echo "Backup $latest_backup applied successfully!"
 fi
 
-# Insert E2E test users AFTER backup restore to ensure they always exist
-echo "Inserting E2E test users..."
-mysql -u root -p${MYSQL_ROOT_PASSWORD} <<EOSQL
-USE maltalist;
+# Check for prod flag or environment variable
+IS_PROD=false
+if [ "$1" = "--prod" ] || [ "$ENVIRONMENT" = "production" ]; then
+    IS_PROD=true
+fi
 
-INSERT INTO Users (Id, UserName, Email, UserPicture, PhoneNumber, CreatedAt, LastOnline, ConsentTimestamp, IsActive)
-VALUES 
-    (
-        'e2e-test-user-1',
-        'Test User One',
-        'testuser1@maltalist.test',
-        '/assets/img/users/test-user-1.jpg',
-        '+356 2123 4567',
-        NOW(),
-        NOW(),
-        NOW(),
-        TRUE
-    ),
-    (
-        'e2e-test-user-2',
-        'Test User Two',
-        'testuser2@maltalist.test',
-        '/assets/img/users/test-user-2.jpg',
-        '+356 2123 4568',
-        NOW(),
-        NOW(),
-        NOW(),
-        TRUE
-    ),
-    (
-        'e2e-test-seller',
-        'Test Seller',
-        'seller@maltalist.test',
-        '',
-        '+356 9999 8888',
-        NOW(),
-        NOW(),
-        NOW(),
-        TRUE
-    )
-ON DUPLICATE KEY UPDATE 
-    UserName = VALUES(UserName),
-    Email = VALUES(Email),
-    UserPicture = VALUES(UserPicture),
-    PhoneNumber = VALUES(PhoneNumber),
-    IsActive = TRUE;
+if [ "$IS_PROD" = false ]; then
+    # Insert E2E test users AFTER backup restore to ensure they always exist
+    echo "Inserting E2E test users..."
+    mysql -u root -p${MYSQL_ROOT_PASSWORD} <<EOSQL
+    USE maltalist;
+
+    INSERT INTO Users (Id, UserName, Email, UserPicture, PhoneNumber, CreatedAt, LastOnline, ConsentTimestamp, IsActive)
+    VALUES 
+        (
+            'e2e-test-user-1',
+            'Test User One',
+            'testuser1@maltalist.test',
+            '/assets/img/users/test-user-1.jpg',
+            '+356 2123 4567',
+            NOW(),
+            NOW(),
+            NOW(),
+            TRUE
+        ),
+        (
+            'e2e-test-user-2',
+            'Test User Two',
+            'testuser2@maltalist.test',
+            '/assets/img/users/test-user-2.jpg',
+            '+356 2123 4568',
+            NOW(),
+            NOW(),
+            NOW(),
+            TRUE
+        ),
+        (
+            'e2e-test-seller',
+            'Test Seller',
+            'seller@maltalist.test',
+            '',
+            '+356 9999 8888',
+            NOW(),
+            NOW(),
+            NOW(),
+            TRUE
+        )
+    ON DUPLICATE KEY UPDATE 
+        UserName = VALUES(UserName),
+        Email = VALUES(Email),
+        UserPicture = VALUES(UserPicture),
+        PhoneNumber = VALUES(PhoneNumber),
+        IsActive = TRUE;
 EOSQL
-echo "E2E test users ready!"
+    echo "E2E test users ready!"
+else
+    echo "Production mode detected. Skipping E2E test users."
+fi
 
 # Start backup script
 chmod +x /backup.sh
