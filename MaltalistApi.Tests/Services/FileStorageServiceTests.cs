@@ -173,7 +173,7 @@ public class FileStorageServiceTests
         var uniquePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var config = CreateConfiguration(uniquePath);
         var service = new FileStorageService(config);
-        var listingDir = Path.Combine(uniquePath, "1");
+        var listingDir = Path.Combine(uniquePath, "listings", "1");
         Directory.CreateDirectory(listingDir);
         File.WriteAllText(Path.Combine(listingDir, "test.jpg"), "test");
 
