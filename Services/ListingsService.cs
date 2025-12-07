@@ -111,7 +111,25 @@ public class ListingsService : IListingsService
 
     public async Task<Listing?> GetListingByIdAsync(int id)
     {
-        return await _db.Listings.FindAsync(id);
+        var listing = await _db.Listings.FindAsync(id);
+        if (listing == null)
+            return null;
+
+        // Populate Picture1 with the first image URL from filesystem
+        var picDir = $"/images/listings/{listing.Id}";
+        if (Directory.Exists(picDir))
+        {
+            var files = Directory.GetFiles(picDir)
+                .Select(Path.GetFileName)
+                .OrderBy(f => f)
+                .ToList();
+            if (files.Any())
+            {
+                listing.Picture1 = $"/assets/img/listings/{listing.Id}/{files.First()}";
+            }
+        }
+
+        return listing;
     }
 
     public async Task<Listing?> CreateListingAsync(CreateListingRequest request)
