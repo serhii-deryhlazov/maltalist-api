@@ -31,7 +31,7 @@ public class PicturesController : ControllerBase
                 return BadRequest("No files provided");
 
             // Remove existing pictures before adding new ones
-            var targetDir = $"/images/{id}";
+            var targetDir = Path.Combine("/images", "listings", id.ToString());
             if (Directory.Exists(targetDir))
             {
                 var existingFiles = Directory.GetFiles(targetDir);
@@ -58,11 +58,11 @@ public class PicturesController : ControllerBase
         if (id <= 0)
             return BadRequest("Invalid listing ID");
 
-        var targetDir = $"/images/{id}";
+        var targetDir = Path.Combine("/images", "listings", id.ToString());
         
         // Ensure the directory path doesn't contain traversal attempts
         var fullPath = Path.GetFullPath(targetDir);
-        if (!fullPath.StartsWith("/images/"))
+        if (!fullPath.Contains("/images/listings/"))
             return BadRequest("Invalid path");
             
         if (!Directory.Exists(targetDir))

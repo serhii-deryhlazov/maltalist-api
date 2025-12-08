@@ -1,5 +1,7 @@
 using MaltalistApi.Models;
 using MaltalistApi.Helpers;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace MaltalistApi.Services;
 
@@ -106,13 +108,15 @@ public class UsersService : IUsersService
             }
         }
 
-        // Save new profile picture
-        var fileName = $"profile{ext}";
+        // Always save as PNG
+        var fileName = "profile.png";
         var filePath = Path.Combine(userDir, fileName);
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        using (var stream = file.OpenReadStream())
+        using (var image = await Image.LoadAsync(stream))
+        using (var outputStream = new FileStream(filePath, FileMode.Create))
         {
-            await file.CopyToAsync(stream);
+            await image.SaveAsPngAsync(outputStream);
         }
 
         // Update user's picture URL in database
@@ -206,16 +210,6 @@ public class UsersService : IUsersService
             var response = await client.GetAsync(imageUrl);
             if (!response.IsSuccessStatusCode) return null;
 
-            var contentType = response.Content.Headers.ContentType?.MediaType;
-            var ext = contentType switch
-            {
-                "image/jpeg" => ".jpg",
-                "image/png" => ".png",
-                "image/gif" => ".gif",
-                "image/webp" => ".webp",
-                _ => ".jpg" // Default fallback
-            };
-
             var userDir = Path.Combine("/images/users", userId);
             if (!Directory.Exists(userDir))
                 Directory.CreateDirectory(userDir);
@@ -227,12 +221,15 @@ public class UsersService : IUsersService
                 File.Delete(existingFile);
             }
 
-            var fileName = $"profile{ext}";
+            // Always save as PNG
+            var fileName = "profile.png";
             var filePath = Path.Combine(userDir, fileName);
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            using (var stream = await response.Content.ReadAsStreamAsync())
+            using (var image = await Image.LoadAsync(stream))
+            using (var outputStream = new FileStream(filePath, FileMode.Create))
             {
-                await response.Content.CopyToAsync(stream);
+                await image.SaveAsPngAsync(outputStream);
             }
 
             return $"/assets/img/users/{userId}/{fileName}";
