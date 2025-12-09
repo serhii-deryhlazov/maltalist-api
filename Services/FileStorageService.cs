@@ -21,8 +21,31 @@ public class FileStorageService : IFileStorageService
         if (!Directory.Exists(targetDir))
             Directory.CreateDirectory(targetDir);
 
+        // Find the next available picture number when appending
+        int nextIdx = 1;
+        if (Directory.Exists(targetDir))
+        {
+            var existingFiles = Directory.GetFiles(targetDir);
+            if (existingFiles.Length > 0)
+            {
+                // Get the highest picture number + 1
+                var picNumbers = existingFiles
+                    .Select(f => Path.GetFileNameWithoutExtension(f))
+                    .Where(name => name.StartsWith("Picture"))
+                    .Select(name => name.Replace("Picture", ""))
+                    .Where(num => int.TryParse(num, out _))
+                    .Select(int.Parse)
+                    .ToList();
+                
+                if (picNumbers.Count > 0)
+                {
+                    nextIdx = picNumbers.Max() + 1;
+                }
+            }
+        }
+
         var savedFiles = new List<string>();
-        int idx = 1;
+        int idx = nextIdx;
         foreach (var file in files)
         {
             if (file.Length > 0)

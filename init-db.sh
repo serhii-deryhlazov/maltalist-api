@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Get the password from environment variable, with fallback for prod
+MYSQL_PASSWORD=${MYSQL_PASSWORD:-M@LtApass}
+
 mysql -u root -p${MYSQL_ROOT_PASSWORD} <<EOSQL
 CREATE DATABASE IF NOT EXISTS maltalist;
 USE maltalist;
@@ -52,7 +55,13 @@ CREATE INDEX IX_Listings_UserId ON Listings(UserId);
 CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
 CREATE INDEX IX_Promotions_Category ON Promotions(Category);
 CREATE INDEX IX_Promotions_ExpirationDate ON Promotions(ExpirationDate);
+
+-- Create or update maltalist_user
+GRANT ALL PRIVILEGES ON maltalist.* TO 'maltalist_user'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+FLUSH PRIVILEGES;
 EOSQL
+
+echo "Database and user created successfully!"
 
 # Apply freshest backup if exists
 latest_backup=$(ls -1 /backups/maltalist_*.sql 2>/dev/null | sort | tail -n 1)

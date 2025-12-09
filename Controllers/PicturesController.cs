@@ -30,15 +30,11 @@ public class PicturesController : ControllerBase
             if (Request.Form.Files.Count == 0)
                 return BadRequest("No files provided");
 
-            // Remove existing pictures before adding new ones
+            // Create directory if it doesn't exist (but don't delete existing files)
             var targetDir = Path.Combine("/images", "listings", id.ToString());
-            if (Directory.Exists(targetDir))
+            if (!Directory.Exists(targetDir))
             {
-                var existingFiles = Directory.GetFiles(targetDir);
-                foreach (var file in existingFiles)
-                {
-                    System.IO.File.Delete(file);
-                }
+                Directory.CreateDirectory(targetDir);
             }
 
             var result = await _picturesService.AddListingPicturesAsync(id, Request.Form.Files);
@@ -77,5 +73,41 @@ public class PicturesController : ControllerBase
         var urls = files.Select(f => $"/assets/img/listings/{id}/{f}").ToList();
 
         return Ok(urls);
+    }
+
+    [HttpDelete("{id}/{filename}")]
+    public async Task<IActionResult> DeleteListingPicture(int id, string filename)
+    {
+        try
+        {
+            // Validate listing exists
+            var listing = await _listingsService.GetListingByIdAsync(id);
+            if (listing == null)
+                return NotFound("Listing not found");
+
+            // Sanitize filename to prevent path traversal
+            if (string.IsNullOrWhiteSpace(filename) || filename.Contains("..") || filename.Contains("/") || filename.Contains("\\"))
+                return BadRequest("Invalid filename");
+
+            var targetDir = Path.Combine("/images", "listings", id.ToString());
+            var filePath = Path.Combine(targetDir, filename);
+
+            // Ensure the full path is within the listing's directory
+            var fullPath = Path.GetFullPath(filePath);
+            var fullDir = Path.GetFullPath(targetDir);
+            if (!fullPath.StartsWith(fullDir))
+                return BadRequest("Invalid path");
+
+            if (!System.IO.File.Exists(filePath))
+                return NotFound("Picture not found");
+
+            // Delete the file
+            System.IO.File.Delete(filePath);
+            return Ok(new { Message = "Picture deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = ex.Message });
+        }
     }
 }
