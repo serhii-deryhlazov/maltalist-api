@@ -171,6 +171,7 @@ public class ListingsService : IListingsService
         listing.Price = request.Price;
         listing.Category = InputSanitizer.SanitizeText(request.Category);
         listing.Location = InputSanitizer.SanitizeText(request.Location);
+        listing.ShowPhone = request.ShowPhone;
         listing.Complete = request.Complete;
         listing.Lease = request.Lease;
         listing.Approved = false;
