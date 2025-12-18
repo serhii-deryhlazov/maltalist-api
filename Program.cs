@@ -3,6 +3,7 @@ using MaltalistApi.Services;
 using MaltalistApi.Middleware;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +66,18 @@ builder.Services.AddScoped<IPicturesService, PicturesService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
+// Add authentication
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/api/googleauth/login";
+        options.LogoutPath = "/logout";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -77,6 +90,9 @@ app.UseRouting();
 app.UseCors("AllowSpecificOrigins");
 
 app.UseRateLimiter();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

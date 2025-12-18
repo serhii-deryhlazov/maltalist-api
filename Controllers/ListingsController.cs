@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MaltalistApi.Models;
 using MaltalistApi.Services;
 using System.Text;
@@ -41,6 +42,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult<Listing>> CreateListing([FromBody] CreateListingRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
@@ -54,6 +56,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<ActionResult<Listing>> UpdateListing(int id, [FromBody] UpdateListingRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
@@ -67,6 +70,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<ActionResult> DeleteListing(int id)
     {
         var success = await _listingsService.DeleteListingAsync(id);

@@ -1,4 +1,5 @@
 using MaltalistApi.Models;
+using Google.Apis.Auth;
 
 namespace MaltalistApi.Services;
 
@@ -13,4 +14,5 @@ public interface IUsersService
     Task<bool> DeactivateUserAsync(string id);
     Task<bool> ActivateUserAsync(string id);
     Task<string?> DownloadAndSaveGoogleProfilePictureAsync(string userId, string imageUrl);
+    Task<User> LoginWithGoogleAsync(GoogleJsonWebSignature.Payload payload);
 }

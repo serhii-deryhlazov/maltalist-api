@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MaltalistApi.Services;
 using System.IO;
 
@@ -18,6 +19,7 @@ public class PicturesController : ControllerBase
     }
 
     [HttpPost("{id}")]
+    [Authorize]
     public async Task<IActionResult> AddListingPictures(int id)
     {
         try
@@ -76,6 +78,7 @@ public class PicturesController : ControllerBase
     }
 
     [HttpDelete("{id}/{filename}")]
+    [Authorize]
     public async Task<IActionResult> DeleteListingPicture(int id, string filename)
     {
         try

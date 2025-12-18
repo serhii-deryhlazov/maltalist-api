@@ -1,5 +1,6 @@
 using MaltalistApi.Models;
 using MaltalistApi.Helpers;
+using Google.Apis.Auth;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 
@@ -239,5 +240,45 @@ public class UsersService : IUsersService
             // If download fails, return null so we can fallback to original URL or placeholder
             return null;
         }
+    }
+
+    public async Task<User> LoginWithGoogleAsync(GoogleJsonWebSignature.Payload payload)
+    {
+        var userId = payload.Subject;
+        var user = await _db.Users.FindAsync(userId);
+
+        if (user == null)
+        {
+            user = new User
+            {
+                Id = userId,
+                Email = payload.Email,
+                UserName = $"{payload.GivenName} {payload.FamilyName}",
+                UserPicture = payload.Picture,
+                CreatedAt = DateTime.UtcNow,
+                LastOnline = DateTime.UtcNow
+            };
+
+            // Try to download and save Google profile picture locally
+            if (!string.IsNullOrEmpty(payload.Picture))
+            {
+                var localPictureUrl = await DownloadAndSaveGoogleProfilePictureAsync(userId, payload.Picture);
+                if (localPictureUrl != null)
+                {
+                    user.UserPicture = localPictureUrl;
+                }
+            }
+
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+        }
+        else
+        {
+            user.LastOnline = DateTime.UtcNow;
+            _db.Users.Update(user);
+            await _db.SaveChangesAsync();
+        }
+
+        return user;
     }
 }

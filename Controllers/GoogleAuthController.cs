@@ -3,6 +3,9 @@ using MaltalistApi.Models;
 using MaltalistApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
 
 namespace MaltalistApi.Controllers;
 
@@ -11,13 +14,11 @@ namespace MaltalistApi.Controllers;
 [EnableRateLimiting("auth")]
 public class GoogleAuthController : ControllerBase
 {
-    private readonly MaltalistDbContext _db;
     private readonly ILogger<GoogleAuthController> _logger;
     private readonly IUsersService _usersService;
 
-    public GoogleAuthController(MaltalistDbContext db, ILogger<GoogleAuthController> logger, IUsersService usersService)
+    public GoogleAuthController(ILogger<GoogleAuthController> logger, IUsersService usersService)
     {
-        _db = db;
         _logger = logger;
         _usersService = usersService;
     }
@@ -39,14 +40,7 @@ public class GoogleAuthController : ControllerBase
 
         try
         {
-            // Validate token with specific settings
-            var settings = new GoogleJsonWebSignature.ValidationSettings
-            {
-                // Add audience validation if you have a specific client ID
-                // Audience = new[] { "your-client-id.apps.googleusercontent.com" }
-            };
-            
-            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
+            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
             
             // Verify token expiration
             var expirationTime = DateTimeOffset.FromUnixTimeSeconds(payload.ExpirationTimeSeconds ?? 0);
@@ -73,40 +67,27 @@ public class GoogleAuthController : ControllerBase
             return Unauthorized(new { Message = "Authentication failed" });
         }
 
-        var userId = payload.Subject;
-        var user = await _db.Users.FindAsync(userId);
-
-        if (user == null)
+        var user = await _usersService.LoginWithGoogleAsync(payload);
+        
+        // Create claims for authentication
+        var claims = new List<Claim>
         {
-            user = new User
-            {
-                Id = userId,
-                Email = payload.Email,
-                UserName = $"{payload.GivenName} {payload.FamilyName}",
-                UserPicture = payload.Picture,
-                CreatedAt = DateTime.UtcNow,
-                LastOnline = DateTime.UtcNow
-            };
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email ?? ""),
+            new Claim(ClaimTypes.Name, user.UserName ?? "")
+        };
 
-            // Try to download and save Google profile picture locally
-            if (!string.IsNullOrEmpty(payload.Picture))
-            {
-                var localPictureUrl = await _usersService.DownloadAndSaveGoogleProfilePictureAsync(userId, payload.Picture);
-                if (localPictureUrl != null)
-                {
-                    user.UserPicture = localPictureUrl;
-                }
-            }
-
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-        }
-        else
+        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var authProperties = new AuthenticationProperties
         {
-            user.LastOnline = DateTime.UtcNow;
-            _db.Users.Update(user);
-            await _db.SaveChangesAsync();
-        }
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+        };
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(claimsIdentity),
+            authProperties);
 
         return Ok(user);
     }

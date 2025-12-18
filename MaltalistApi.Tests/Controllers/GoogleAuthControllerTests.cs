@@ -11,22 +11,13 @@ namespace MaltalistApi.Tests.Controllers;
 
 public class GoogleAuthControllerTests
 {
-    private MaltalistDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<MaltalistDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        return new MaltalistDbContext(options);
-    }
-
     [Fact]
     public async Task GoogleLogin_NullToken_ReturnsBadRequest()
     {
         // Arrange
-        using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
         var mockUsersService = new Mock<IUsersService>();
-        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
+        var controller = new GoogleAuthController(mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = null! };
 
         // Act
@@ -40,10 +31,9 @@ public class GoogleAuthControllerTests
     public async Task GoogleLogin_EmptyToken_ReturnsBadRequest()
     {
         // Arrange
-        using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
         var mockUsersService = new Mock<IUsersService>();
-        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
+        var controller = new GoogleAuthController(mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = "" };
 
         // Act
@@ -57,10 +47,9 @@ public class GoogleAuthControllerTests
     public async Task GoogleLogin_WhitespaceToken_ReturnsBadRequest()
     {
         // Arrange
-        using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
         var mockUsersService = new Mock<IUsersService>();
-        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
+        var controller = new GoogleAuthController(mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = "   " };
 
         // Act
@@ -74,10 +63,9 @@ public class GoogleAuthControllerTests
     public async Task GoogleLogin_InvalidToken_ReturnsUnauthorized()
     {
         // Arrange
-        using var context = CreateContext();
         var mockLogger = new Mock<ILogger<GoogleAuthController>>();
         var mockUsersService = new Mock<IUsersService>();
-        var controller = new GoogleAuthController(context, mockLogger.Object, mockUsersService.Object);
+        var controller = new GoogleAuthController(mockLogger.Object, mockUsersService.Object);
         var request = new GoogleAuthController.GoogleLoginRequest { IdToken = "invalid-token" };
 
         // Act

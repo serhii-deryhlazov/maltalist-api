@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MaltalistApi.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -51,6 +52,7 @@ namespace MaltalistApi.Controllers
 
         // POST: api/Promotions
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> CreatePromotion([FromBody] CreatePromotionRequest request)
         {
             // Assume Stripe payment is handled on frontend, here we just create the record

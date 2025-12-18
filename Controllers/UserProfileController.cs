@@ -2,6 +2,7 @@
 using MaltalistApi.Models;
 using MaltalistApi.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MaltalistApi.Controllers;
 
@@ -29,6 +30,7 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize]
     public async Task<ActionResult<User>> UpdateUserProfile(string id, [FromBody] User updatedUser)
     {
         if (id != updatedUser.Id)
@@ -46,6 +48,7 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize]
     public async Task<ActionResult> DeleteUserProfile(string id)
     {
         var success = await _usersService.DeleteUserAsync(id);
@@ -73,6 +76,7 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpPost("{id}/picture")]
+    [Authorize]
     public async Task<IActionResult> UploadProfilePicture(string id)
     {
         try
@@ -81,7 +85,6 @@ public class UserProfileController : ControllerBase
             if (user == null)
                 return NotFound(new { Message = "User not found" });
 
-            // Validate that a file was provided
             if (Request.Form.Files.Count == 0)
                 return BadRequest(new { Message = "No file provided" });
 
