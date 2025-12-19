@@ -28,6 +28,13 @@ public class PicturesController : ControllerBase
             if (listing == null)
                 return NotFound();
 
+            // Verify ownership: Only allow the listing owner to add pictures
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId) || listing.UserId != currentUserId)
+            {
+                return Forbid();
+            }
+
             // Validate that files were provided
             if (Request.Form.Files.Count == 0)
                 return BadRequest("No files provided");
@@ -87,6 +94,13 @@ public class PicturesController : ControllerBase
             var listing = await _listingsService.GetListingByIdAsync(id);
             if (listing == null)
                 return NotFound("Listing not found");
+
+            // Verify ownership: Only allow the listing owner to delete pictures
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId) || listing.UserId != currentUserId)
+            {
+                return Forbid();
+            }
 
             // Sanitize filename to prevent path traversal
             if (string.IsNullOrWhiteSpace(filename) || filename.Contains("..") || filename.Contains("/") || filename.Contains("\\"))

@@ -71,28 +71,9 @@ public class UsersService : IUsersService
 
     public async Task<string> UploadUserProfilePictureAsync(string userId, IFormFile file)
     {
-        const long MaxFileSize = 5 * 1024 * 1024; // 5MB
-        string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-        string[] AllowedMimeTypes = { "image/jpeg", "image/png", "image/gif", "image/webp" };
-
-        // Validate file size
-        if (file.Length > MaxFileSize)
-        {
-            throw new InvalidOperationException($"File exceeds maximum size of 5MB");
-        }
-
-        // Validate file extension
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!AllowedExtensions.Contains(ext))
-        {
-            throw new InvalidOperationException($"File type {ext} is not allowed. Only image files are permitted.");
-        }
-
-        // Validate MIME type
-        if (!AllowedMimeTypes.Contains(file.ContentType.ToLowerInvariant()))
-        {
-            throw new InvalidOperationException($"Invalid file type. Only image files are permitted.");
-        }
+        // CRITICAL SECURITY: Validate the image file comprehensively
+        // This prevents file type spoofing, malicious uploads, and ensures only valid images
+        await ImageValidator.ValidateImageFileAsync(file);
 
         // Create user directory
         var userDir = Path.Combine("/images/users", userId);
@@ -109,7 +90,7 @@ public class UsersService : IUsersService
             }
         }
 
-        // Always save as PNG
+        // Always save as PNG (re-encoding removes any malicious content)
         var fileName = "profile.png";
         var filePath = Path.Combine(userDir, fileName);
 

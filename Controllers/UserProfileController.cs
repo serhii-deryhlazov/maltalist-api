@@ -33,6 +33,13 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<ActionResult<User>> UpdateUserProfile(string id, [FromBody] User updatedUser)
     {
+        // Verify ownership: Only allow users to modify their own profile
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
+        {
+            return Forbid();
+        }
+
         if (id != updatedUser.Id)
         {
             return BadRequest(new { Message = "User ID mismatch" });
@@ -51,6 +58,13 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<ActionResult> DeleteUserProfile(string id)
     {
+        // Verify ownership: Only allow users to delete their own profile
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
+        {
+            return Forbid();
+        }
+
         var success = await _usersService.DeleteUserAsync(id);
         if (!success)
         {
@@ -79,6 +93,13 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UploadProfilePicture(string id)
     {
+        // Verify ownership: Only allow users to upload their own profile picture
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
+        {
+            return Forbid();
+        }
+
         try
         {
             var user = await _usersService.GetUserByIdAsync(id);
@@ -100,8 +121,16 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpGet("{id}/export")]
+    [Authorize]
     public async Task<ActionResult> ExportUserData(string id)
     {
+        // Verify ownership: Only allow users to export their own data
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
+        {
+            return Forbid();
+        }
+
         var user = await _usersService.GetUserByIdAsync(id);
         if (user == null)
         {
@@ -113,8 +142,16 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpPost("{id}/deactivate")]
+    [Authorize]
     public async Task<ActionResult> DeactivateAccount(string id)
     {
+        // Verify ownership: Only allow users to deactivate their own account
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
+        {
+            return Forbid();
+        }
+
         var user = await _usersService.GetUserByIdAsync(id);
         if (user == null)
         {
@@ -126,8 +163,16 @@ public class UserProfileController : ControllerBase
     }
 
     [HttpPost("{id}/activate")]
+    [Authorize]
     public async Task<ActionResult> ActivateAccount(string id)
     {
+        // Verify ownership: Only allow users to activate their own account
+        var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
+        {
+            return Forbid();
+        }
+
         var user = await _usersService.GetUserByIdAsync(id);
         if (user == null)
         {
