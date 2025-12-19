@@ -2,8 +2,16 @@
 set -e
 set +H  # Disable history expansion to avoid issues with ! character in passwords
 
-# Get the password from environment variable, with fallback for prod
-MYSQL_PASSWORD=${MYSQL_PASSWORD:-M@LtApass}
+# Get the password from environment variable (REQUIRED - no fallback)
+if [ -z "$MYSQL_PASSWORD" ]; then
+    echo "ERROR: MYSQL_PASSWORD environment variable is not set!"
+    exit 1
+fi
+
+if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
+    echo "ERROR: MYSQL_ROOT_PASSWORD environment variable is not set!"
+    exit 1
+fi
 
 mysql -u root -p${MYSQL_ROOT_PASSWORD} <<'EOSQL'
 CREATE DATABASE IF NOT EXISTS maltalist;
@@ -63,14 +71,8 @@ EOSQL
 # Use cat with a here-document to avoid shell interpretation issues with special characters
 mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "CREATE USER IF NOT EXISTS 'maltalist_user'@'%';" 2>/dev/null || true
 mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -e "GRANT ALL PRIVILEGES ON maltalist.* TO 'maltalist_user'@'%';"
-# Set password safely using a here-document with single quotes
-mysql -u root -p"${MYSQL_ROOT_PASSWORD}" << 'EOFPWD'
-ALTER USER 'maltalist_user'@'%' IDENTIFIED WITH mysql_native_password BY 'PASSWORD_TO_REPLACE';
-FLUSH PRIVILEGES;
-EOFPWD
-# This won't work because we can't use variables in single-quoted heredoc
 
-# Alternative: Use printf to safely pass the SQL
+# Set password safely using printf to avoid shell interpretation issues
 printf "ALTER USER 'maltalist_user'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\nFLUSH PRIVILEGES;\n" "${MYSQL_PASSWORD}" | mysql -u root -p"${MYSQL_ROOT_PASSWORD}"
 
 echo "Database and user created successfully!"
