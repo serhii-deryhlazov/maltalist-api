@@ -62,17 +62,39 @@ public class ListingsController : ControllerBase
         if (request == null || string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest("Invalid listing data");
 
-        var listing = await _listingsService.UpdateListingAsync(id, request);
+        var listing = await _listingsService.GetListingByIdAsync(id);
         if (listing == null)
             return NotFound();
 
-        return Ok(listing);
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        if (listing.UserId != userId)
+            return Forbid();
+
+        var updatedListing = await _listingsService.UpdateListingAsync(id, request);
+        if (updatedListing == null)
+            return NotFound();
+
+        return Ok(updatedListing);
     }
 
     [HttpDelete("{id}")]
     [Authorize]
     public async Task<ActionResult> DeleteListing(int id)
     {
+        var listing = await _listingsService.GetListingByIdAsync(id);
+        if (listing == null)
+            return NotFound();
+
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        if (listing.UserId != userId)
+            return Forbid();
+
         var success = await _listingsService.DeleteListingAsync(id);
         if (!success)
             return NotFound();

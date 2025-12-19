@@ -15,7 +15,6 @@ builder.Services.AddDbContext<MaltalistDbContext>(options =>
 
 builder.Services.AddHttpClient();
 
-// Configure CORS with specific origins
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
     ?? new[] { "http://localhost", "http://localhost:80" };
 
@@ -30,10 +29,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure rate limiting
 builder.Services.AddRateLimiter(options =>
 {
-    // Global rate limit
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -45,7 +42,6 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
-    // Stricter limit for authentication endpoints
     options.AddFixedWindowLimiter("auth", options =>
     {
         options.PermitLimit = 10;
@@ -66,7 +62,6 @@ builder.Services.AddScoped<IPicturesService, PicturesService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
-// Add authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -74,6 +69,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LogoutPath = "/logout";
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
         options.SlidingExpiration = true;
+        
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = 401;
+            return Task.CompletedTask;
+        };
+        
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = 403;
+            return Task.CompletedTask;
+        };
     });
 
 builder.Services.AddAuthorization();
