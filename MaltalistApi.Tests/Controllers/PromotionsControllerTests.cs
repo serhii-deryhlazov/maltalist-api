@@ -1,8 +1,14 @@
 using Xunit;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MaltalistApi.Controllers;
 using MaltalistApi.Models;
+using MaltalistApi.Interfaces;
+using Moq;
+using System.Security.Claims;
 
 namespace MaltalistApi.Tests.Controllers;
 
@@ -16,12 +22,55 @@ public class PromotionsControllerTests
         return new MaltalistDbContext(options);
     }
 
+    private PromotionsController CreateController(MaltalistDbContext context)
+    {
+        var mockPaymentService = new Mock<IPaymentService>();
+        var mockConfiguration = new Mock<IConfiguration>();
+        var mockLogger = new Mock<ILogger<PromotionsController>>();
+        
+        var mockConfigSection = new Mock<IConfigurationSection>();
+        mockConfigSection.Setup(s => s.Value).Returns("9.99");
+        mockConfiguration.Setup(c => c.GetSection("Stripe:PromotionPrice")).Returns(mockConfigSection.Object);
+        mockConfiguration.Setup(c => c["Stripe:PromotionPrice"]).Returns("9.99");
+        
+        // Mock payment verification to return true
+        mockPaymentService.Setup(p => p.VerifyPaymentIntentAsync(It.IsAny<string>(), It.IsAny<decimal>()))
+            .ReturnsAsync(true);
+        
+        return new PromotionsController(
+            context,
+            mockPaymentService.Object,
+            mockConfiguration.Object,
+            mockLogger.Object
+        );
+    }
+
+    private void SetupAuthenticatedUser(PromotionsController controller, string userId)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        
+        var httpContext = new DefaultHttpContext
+        {
+            User = claimsPrincipal
+        };
+        
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+    }
+
     [Fact]
     public async Task GetPromotedListings_ReturnsEmptyList_WhenNoPromotions()
     {
         // Arrange
         using var context = CreateContext();
-        var controller = new PromotionsController(context);
+        var controller = CreateController(context);
 
         // Act
         var result = await controller.GetPromotedListings("Electronics");
@@ -37,7 +86,7 @@ public class PromotionsControllerTests
     {
         // Arrange
         using var context = CreateContext();
-        var controller = new PromotionsController(context);
+        var controller = CreateController(context);
 
         var listing1 = new Listing
         {
@@ -96,7 +145,7 @@ public class PromotionsControllerTests
     {
         // Arrange
         using var context = CreateContext();
-        var controller = new PromotionsController(context);
+        var controller = CreateController(context);
 
         var listing1 = new Listing
         {
@@ -155,7 +204,8 @@ public class PromotionsControllerTests
     {
         // Arrange
         using var context = CreateContext();
-        var controller = new PromotionsController(context);
+        var controller = CreateController(context);
+        SetupAuthenticatedUser(controller, "user1");
 
         var listing = new Listing
         {
@@ -176,7 +226,8 @@ public class PromotionsControllerTests
         {
             ListingId = listing.Id,
             Category = "Electronics",
-            ExpirationDate = DateTime.UtcNow.AddDays(7)
+            ExpirationDate = DateTime.UtcNow.AddDays(7),
+            PaymentIntentId = "pi_test_123456789"
         };
 
         // Act
@@ -194,7 +245,8 @@ public class PromotionsControllerTests
     {
         // Arrange
         using var context = CreateContext();
-        var controller = new PromotionsController(context);
+        var controller = CreateController(context);
+        SetupAuthenticatedUser(controller, "user1");
 
         var listing = new Listing
         {
@@ -215,7 +267,8 @@ public class PromotionsControllerTests
         {
             ListingId = listing.Id,
             Category = "Electronics",
-            ExpirationDate = DateTime.UtcNow.AddDays(7)
+            ExpirationDate = DateTime.UtcNow.AddDays(7),
+            PaymentIntentId = "pi_test_123456789"
         };
 
         // Act

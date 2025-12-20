@@ -1,8 +1,11 @@
 using Xunit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MaltalistApi.Services;
 using Moq;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace MaltalistApi.Tests.Services;
 
@@ -20,12 +23,34 @@ public class FileStorageServiceTests
             .Build();
     }
 
+    private FileStorageService CreateService(IConfiguration config)
+    {
+        var mockLogger = new Mock<ILogger<FileStorageService>>();
+        return new FileStorageService(config, mockLogger.Object);
+    }
+
+    private byte[] CreateValidImageBytes(string format = "jpeg")
+    {
+        using var image = new Image<Rgba32>(100, 100);
+        using var ms = new MemoryStream();
+        
+        if (format == "jpeg")
+            image.SaveAsJpeg(ms);
+        else if (format == "png")
+            image.SaveAsPng(ms);
+        else if (format == "webp")
+            image.SaveAsWebp(ms);
+        
+        return ms.ToArray();
+    }
+
     private IFormFile CreateMockFile(string fileName, string contentType, byte[] content)
     {
         var mock = new Mock<IFormFile>();
         mock.Setup(f => f.FileName).Returns(fileName);
         mock.Setup(f => f.ContentType).Returns(contentType);
         mock.Setup(f => f.Length).Returns(content.Length);
+        mock.Setup(f => f.OpenReadStream()).Returns(() => new MemoryStream(content));
         mock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
             .Returns((Stream target, CancellationToken token) =>
             {
@@ -41,8 +66,8 @@ public class FileStorageServiceTests
         // Arrange
         var uniquePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var config = CreateConfiguration(uniquePath);
-        var service = new FileStorageService(config);
-        var content = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 }; // JPEG header
+        var service = CreateService(config);
+        var content = CreateValidImageBytes("jpeg");
         var file = CreateMockFile("test.jpg", "image/jpeg", content);
         
         var files = new FormFileCollection { file };
@@ -64,7 +89,7 @@ public class FileStorageServiceTests
     {
         // Arrange
         var config = CreateConfiguration();
-        var service = new FileStorageService(config);
+        var service = CreateService(config);
         var content = new byte[6 * 1024 * 1024]; // 6MB
         var file = CreateMockFile("large.jpg", "image/jpeg", content);
         var files = new FormFileCollection { file };
@@ -81,7 +106,7 @@ public class FileStorageServiceTests
     {
         // Arrange
         var config = CreateConfiguration();
-        var service = new FileStorageService(config);
+        var service = CreateService(config);
         var content = new byte[] { 0x00, 0x01 };
         var file = CreateMockFile("test.exe", "application/x-msdownload", content);
         var files = new FormFileCollection { file };
@@ -98,7 +123,7 @@ public class FileStorageServiceTests
     {
         // Arrange
         var config = CreateConfiguration();
-        var service = new FileStorageService(config);
+        var service = CreateService(config);
         var content = new byte[] { 0x00, 0x01 };
         var file = CreateMockFile("test.jpg", "application/pdf", content);
         var files = new FormFileCollection { file };
@@ -107,7 +132,7 @@ public class FileStorageServiceTests
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.SaveFilesAsync(1, files)
         );
-        Assert.Contains("Invalid file type", exception.Message);
+        Assert.Contains("Invalid MIME type", exception.Message);
     }
 
     [Fact]
@@ -116,14 +141,13 @@ public class FileStorageServiceTests
         // Arrange
         var uniquePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var config = CreateConfiguration(uniquePath);
-        var service = new FileStorageService(config);
-        var content = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+        var service = CreateService(config);
         
         var files = new FormFileCollection
         {
-            CreateMockFile("test1.jpg", "image/jpeg", content),
-            CreateMockFile("test2.png", "image/png", content),
-            CreateMockFile("test3.gif", "image/gif", content)
+            CreateMockFile("test1.jpg", "image/jpeg", CreateValidImageBytes("jpeg")),
+            CreateMockFile("test2.png", "image/png", CreateValidImageBytes("png")),
+            CreateMockFile("test3.webp", "image/webp", CreateValidImageBytes("webp"))
         };
 
         // Act
@@ -133,7 +157,7 @@ public class FileStorageServiceTests
         Assert.Equal(3, result.Count);
         Assert.Equal("Picture1.jpg", result[0]);
         Assert.Equal("Picture2.png", result[1]);
-        Assert.Equal("Picture3.gif", result[2]);
+        Assert.Equal("Picture3.webp", result[2]);
 
         // Cleanup
         if (Directory.Exists(uniquePath))
@@ -146,8 +170,8 @@ public class FileStorageServiceTests
         // Arrange
         var uniquePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var config = CreateConfiguration(uniquePath);
-        var service = new FileStorageService(config);
-        var content = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+        var service = CreateService(config);
+        var content = CreateValidImageBytes("jpeg");
         
         var files = new FormFileCollection();
         for (int i = 0; i < 15; i++)
@@ -172,7 +196,7 @@ public class FileStorageServiceTests
         // Arrange
         var uniquePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var config = CreateConfiguration(uniquePath);
-        var service = new FileStorageService(config);
+        var service = CreateService(config);
         var listingDir = Path.Combine(uniquePath, "listings", "1");
         Directory.CreateDirectory(listingDir);
         File.WriteAllText(Path.Combine(listingDir, "test.jpg"), "test");
@@ -193,7 +217,7 @@ public class FileStorageServiceTests
     {
         // Arrange
         var config = CreateConfiguration();
-        var service = new FileStorageService(config);
+        var service = CreateService(config);
 
         // Act & Assert - should not throw
         await service.DeleteFilesAsync(999);
@@ -205,23 +229,21 @@ public class FileStorageServiceTests
         // Arrange
         var uniquePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var config = CreateConfiguration(uniquePath);
-        var service = new FileStorageService(config);
-        var content = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 };
+        var service = CreateService(config);
         
         var files = new FormFileCollection
         {
-            CreateMockFile("test.jpg", "image/jpeg", content),
-            CreateMockFile("test.jpeg", "image/jpeg", content),
-            CreateMockFile("test.png", "image/png", content),
-            CreateMockFile("test.gif", "image/gif", content),
-            CreateMockFile("test.webp", "image/webp", content)
+            CreateMockFile("test.jpg", "image/jpeg", CreateValidImageBytes("jpeg")),
+            CreateMockFile("test.jpeg", "image/jpeg", CreateValidImageBytes("jpeg")),
+            CreateMockFile("test.png", "image/png", CreateValidImageBytes("png")),
+            CreateMockFile("test.webp", "image/webp", CreateValidImageBytes("webp"))
         };
 
         // Act
         var result = await service.SaveFilesAsync(1, files);
 
         // Assert
-        Assert.Equal(5, result.Count);
+        Assert.Equal(4, result.Count);
 
         // Cleanup
         if (Directory.Exists(uniquePath))

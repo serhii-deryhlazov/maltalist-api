@@ -5,11 +5,31 @@ using Microsoft.AspNetCore.Http;
 using MaltalistApi.Controllers;
 using MaltalistApi.Services;
 using MaltalistApi.Models;
+using System.Security.Claims;
 
 namespace MaltalistApi.Tests.Controllers;
 
 public class PicturesControllerTests
 {
+    private void SetupAuthenticatedUser(PicturesController controller, string userId)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        
+        var httpContext = new DefaultHttpContext
+        {
+            User = claimsPrincipal
+        };
+        
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+    }
     [Fact]
     public async Task AddListingPictures_ListingNotFound_ReturnsNotFound()
     {
@@ -55,19 +75,14 @@ public class PicturesControllerTests
             .ReturnsAsync(listing);
 
         var controller = new PicturesController(mockPicturesService.Object, mockListingsService.Object);
+        SetupAuthenticatedUser(controller, "user1");
         
         // Create FormFileCollection with no files
         var formFiles = new FormFileCollection();
         var formCollection = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>(), formFiles);
         
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.ContentType = "multipart/form-data; boundary=----test";
-        httpContext.Request.Form = formCollection;
-        
-        controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = httpContext
-        };
+        controller.ControllerContext.HttpContext.Request.ContentType = "multipart/form-data; boundary=----test";
+        controller.ControllerContext.HttpContext.Request.Form = formCollection;
 
         // Act
         var result = await controller.AddListingPictures(1);

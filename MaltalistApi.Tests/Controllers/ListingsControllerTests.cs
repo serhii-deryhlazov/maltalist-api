@@ -1,9 +1,11 @@
 using Xunit;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Moq;
 using MaltalistApi.Controllers;
 using MaltalistApi.Models;
 using MaltalistApi.Services;
+using System.Security.Claims;
 
 namespace MaltalistApi.Tests.Controllers;
 
@@ -16,6 +18,26 @@ public class ListingsControllerTests
     {
         _mockService = new Mock<IListingsService>();
         _controller = new ListingsController(_mockService.Object);
+    }
+
+    private void SetupAuthenticatedUser(string userId)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        
+        var httpContext = new DefaultHttpContext
+        {
+            User = claimsPrincipal
+        };
+        
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
     }
 
     [Fact]
@@ -212,6 +234,10 @@ public class ListingsControllerTests
     public async Task UpdateListing_ReturnsOkResult_WithUpdatedListing()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
+        var listing = new Listing { Id = 1, UserId = "user1", Title = "Old Title", Description = "Old Desc", Price = 50m, Category = "Books", Location = "Sliema", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        _mockService.Setup(s => s.GetListingByIdAsync(1)).ReturnsAsync(listing);
+        
         var request = new UpdateListingRequest
         {
             Id = 1,
@@ -249,6 +275,9 @@ public class ListingsControllerTests
     public async Task UpdateListing_ReturnsNotFound_WhenListingDoesNotExist()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
+        _mockService.Setup(s => s.GetListingByIdAsync(999)).ReturnsAsync((Listing?)null);
+        
         var request = new UpdateListingRequest
         {
             Id = 999,
@@ -258,8 +287,6 @@ public class ListingsControllerTests
             Category = "Electronics",
             Location = "Valletta"
         };
-        _mockService.Setup(s => s.UpdateListingAsync(999, request))
-            .ReturnsAsync((Listing?)null);
 
         // Act
         var result = await _controller.UpdateListing(999, request);
@@ -294,6 +321,9 @@ public class ListingsControllerTests
     public async Task DeleteListing_ReturnsNoContent_WhenSuccessful()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
+        var listing = new Listing { Id = 1, UserId = "user1", Title = "Title", Description = "Desc", Price = 50m, Category = "Books", Location = "Sliema", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        _mockService.Setup(s => s.GetListingByIdAsync(1)).ReturnsAsync(listing);
         _mockService.Setup(s => s.DeleteListingAsync(1))
             .ReturnsAsync(true);
 
@@ -308,8 +338,8 @@ public class ListingsControllerTests
     public async Task DeleteListing_ReturnsNotFound_WhenListingDoesNotExist()
     {
         // Arrange
-        _mockService.Setup(s => s.DeleteListingAsync(999))
-            .ReturnsAsync(false);
+        SetupAuthenticatedUser("user1");
+        _mockService.Setup(s => s.GetListingByIdAsync(999)).ReturnsAsync((Listing?)null);
 
         // Act
         var result = await _controller.DeleteListing(999);

@@ -340,8 +340,26 @@ public class ListingsService : IListingsService
                 UserId = l.UserId,
                 CreatedAt = l.CreatedAt,
                 UpdatedAt = l.UpdatedAt,
-                Location = l.Location
+                Location = l.Location,
+                Picture = null
             }).ToList();
+
+            // Populate Picture with the first image URL
+            foreach (var l in result)
+            {
+                var picDir = $"/images/listings/{l.Id}";
+                if (Directory.Exists(picDir))
+                {
+                    var files = Directory.GetFiles(picDir)
+                        .Select(Path.GetFileName)
+                        .OrderBy(f => f)
+                        .ToList();
+                    if (files.Any())
+                    {
+                        l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
+                    }
+                }
+            }
 
             return new GetAllListingsResponse
             {
@@ -367,8 +385,26 @@ public class ListingsService : IListingsService
                 UserId = l.UserId,
                 CreatedAt = l.CreatedAt,
                 UpdatedAt = l.UpdatedAt,
-                Location = l.Location
+                Location = l.Location,
+                Picture = null
             }).ToList();
+
+            // Populate Picture with the first image URL
+            foreach (var l in result)
+            {
+                var picDir = $"/images/listings/{l.Id}";
+                if (Directory.Exists(picDir))
+                {
+                    var files = Directory.GetFiles(picDir)
+                        .Select(Path.GetFileName)
+                        .OrderBy(f => f)
+                        .ToList();
+                    if (files.Any())
+                    {
+                        l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
+                    }
+                }
+            }
 
             return new GetAllListingsResponse
             {

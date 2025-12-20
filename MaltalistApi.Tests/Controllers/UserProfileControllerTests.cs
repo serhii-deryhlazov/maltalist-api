@@ -5,6 +5,7 @@ using Moq;
 using MaltalistApi.Controllers;
 using MaltalistApi.Models;
 using MaltalistApi.Services;
+using System.Security.Claims;
 
 namespace MaltalistApi.Tests.Controllers;
 
@@ -17,6 +18,26 @@ public class UserProfileControllerTests
     {
         _mockService = new Mock<IUsersService>();
         _controller = new UserProfileController(_mockService.Object);
+    }
+
+    private void SetupAuthenticatedUser(string userId)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, userId)
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        
+        var httpContext = new DefaultHttpContext
+        {
+            User = claimsPrincipal
+        };
+        
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
     }
 
     [Fact]
@@ -63,6 +84,7 @@ public class UserProfileControllerTests
     public async Task UpdateUserProfile_ReturnsOkResult_WithUpdatedUser()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
         var updatedUser = new User
         {
             Id = "user1",
@@ -88,6 +110,7 @@ public class UserProfileControllerTests
     public async Task UpdateUserProfile_ReturnsBadRequest_WhenIdMismatch()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
         var updatedUser = new User
         {
             Id = "user2",
@@ -110,6 +133,7 @@ public class UserProfileControllerTests
     public async Task UpdateUserProfile_ReturnsNotFound_WhenUserDoesNotExist()
     {
         // Arrange
+        SetupAuthenticatedUser("invalid");
         var updatedUser = new User
         {
             Id = "invalid",
@@ -134,6 +158,7 @@ public class UserProfileControllerTests
     public async Task DeleteUserProfile_ReturnsNoContent_WhenSuccessful()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
         _mockService.Setup(s => s.DeleteUserAsync("user1"))
             .ReturnsAsync(true);
 
@@ -148,6 +173,7 @@ public class UserProfileControllerTests
     public async Task DeleteUserProfile_ReturnsNotFound_WhenUserDoesNotExist()
     {
         // Arrange
+        SetupAuthenticatedUser("invalid");
         _mockService.Setup(s => s.DeleteUserAsync("invalid"))
             .ReturnsAsync(false);
 
@@ -210,6 +236,7 @@ public class UserProfileControllerTests
     public async Task UploadProfilePicture_ReturnsNotFound_WhenUserDoesNotExist()
     {
         // Arrange
+        SetupAuthenticatedUser("invalid");
         _mockService.Setup(s => s.GetUserByIdAsync("invalid"))
             .ReturnsAsync((User?)null);
 
@@ -225,6 +252,7 @@ public class UserProfileControllerTests
     public async Task UploadProfilePicture_ReturnsBadRequest_WhenNoFileProvided()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
         var user = new User
         {
             Id = "user1",
@@ -237,12 +265,7 @@ public class UserProfileControllerTests
         _mockService.Setup(s => s.GetUserByIdAsync("user1"))
             .ReturnsAsync(user);
 
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = httpContext
-        };
+        _controller.ControllerContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
 
         // Act
         var result = await _controller.UploadProfilePicture("user1");
@@ -256,6 +279,7 @@ public class UserProfileControllerTests
     public async Task UploadProfilePicture_ReturnsOk_WithSuccessfulUpload()
     {
         // Arrange
+        SetupAuthenticatedUser("user1");
         var user = new User
         {
             Id = "user1",
@@ -273,12 +297,7 @@ public class UserProfileControllerTests
         mockFile.Setup(f => f.FileName).Returns("profile.jpg");
 
         var files = new FormFileCollection { mockFile.Object };
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>(), files);
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = httpContext
-        };
+        _controller.ControllerContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>(), files);
 
         _mockService.Setup(s => s.UploadUserProfilePictureAsync("user1", It.IsAny<IFormFile>()))
             .ReturnsAsync("/assets/img/users/user1/profile.jpg");
