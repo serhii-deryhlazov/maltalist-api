@@ -166,6 +166,9 @@ public class ListingsService : IListingsService
         if (listing == null)
             return null;
 
+        var titleChanged = listing.Title != request.Title;
+        var descriptionChanged = listing.Description != request.Description;
+        
         listing.Title = InputSanitizer.SanitizeHtml(request.Title);
         listing.Description = InputSanitizer.SanitizeHtml(request.Description);
         listing.Price = request.Price;
@@ -174,7 +177,12 @@ public class ListingsService : IListingsService
         listing.ShowPhone = request.ShowPhone;
         listing.Complete = request.Complete;
         listing.Lease = request.Lease;
-        listing.Approved = false;
+        
+        if (titleChanged || descriptionChanged)
+        {
+            listing.Approved = false;
+        }
+        
         listing.UpdatedAt = DateTime.UtcNow;
 
         _db.Listings.Update(listing);

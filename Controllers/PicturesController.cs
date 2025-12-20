@@ -48,6 +48,9 @@ public class PicturesController : ControllerBase
 
             var result = await _picturesService.AddListingPicturesAsync(id, Request.Form.Files);
 
+            listing.Approved = false;
+            await _listingsService.UpdateListingAsync(listing);
+
             return Ok(new { Saved = result });
         }
         catch (InvalidOperationException ex)
@@ -120,7 +123,117 @@ public class PicturesController : ControllerBase
 
             // Delete the file
             System.IO.File.Delete(filePath);
+            
+            listing.Approved = false;
+            await _listingsService.UpdateListingAsync(listing);
+            
             return Ok(new { Message = "Picture deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = ex.Message });
+        }
+    }
+
+    [HttpPut("{id}/reorder")]
+    [Authorize]
+    public async Task<IActionResult> ReorderListingPictures(int id, [FromBody] List<string> orderedFilenames)
+    {
+        try
+        {
+            // Validate listing exists
+            var listing = await _listingsService.GetListingByIdAsync(id);
+            if (listing == null)
+                return NotFound("Listing not found");
+
+            // Verify ownership
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId) || listing.UserId != currentUserId)
+            {
+                return Forbid();
+            }
+
+            if (orderedFilenames == null || orderedFilenames.Count == 0)
+                return BadRequest("No filenames provided");
+
+            var targetDir = Path.Combine("/images", "listings", id.ToString());
+            if (!Directory.Exists(targetDir))
+                return NotFound("No pictures found for this listing");
+
+            // Validate all filenames exist and are safe
+            var existingFiles = Directory.GetFiles(targetDir)
+                .Select(f => Path.GetFileName(f))
+                .ToHashSet();
+
+            foreach (var filename in orderedFilenames)
+            {
+                if (string.IsNullOrWhiteSpace(filename) || filename.Contains("..") || 
+                    filename.Contains("/") || filename.Contains("\\"))
+                    return BadRequest($"Invalid filename: {filename}");
+                
+                if (!existingFiles.Contains(filename))
+                    return BadRequest($"File not found: {filename}");
+            }
+
+            // Rename files with order prefix: 001_filename, 002_filename, etc.
+            var tempDir = Path.Combine("/images", "listings", $"{id}_temp");
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                // Move files to temp directory with new names
+                for (int i = 0; i < orderedFilenames.Count; i++)
+                {
+                    var oldPath = Path.Combine(targetDir, orderedFilenames[i]);
+                    var orderPrefix = (i + 1).ToString("D3");
+                    
+                    // Strip existing order prefix if present (format: 001_filename)
+                    var cleanFilename = orderedFilenames[i];
+                    if (cleanFilename.Length > 4 && cleanFilename[3] == '_' && 
+                        char.IsDigit(cleanFilename[0]) && char.IsDigit(cleanFilename[1]) && char.IsDigit(cleanFilename[2]))
+                    {
+                        cleanFilename = cleanFilename.Substring(4);
+                    }
+                    
+                    var newFilename = $"{orderPrefix}_{cleanFilename}";
+                    var tempPath = Path.Combine(tempDir, newFilename);
+                    
+                    System.IO.File.Move(oldPath, tempPath);
+                }
+
+                // Move files back to original directory
+                foreach (var file in Directory.GetFiles(tempDir))
+                {
+                    var filename = Path.GetFileName(file);
+                    var destPath = Path.Combine(targetDir, filename);
+                    System.IO.File.Move(file, destPath);
+                }
+
+                // Clean up temp directory
+                Directory.Delete(tempDir);
+
+                return Ok(new { Message = "Pictures reordered successfully" });
+            }
+            catch
+            {
+                // Rollback: restore original files if something went wrong
+                if (Directory.Exists(tempDir))
+                {
+                    foreach (var file in Directory.GetFiles(tempDir))
+                    {
+                        var filename = Path.GetFileName(file);
+                        // Remove order prefix
+                        var originalName = filename.Substring(4); // Remove "001_"
+                        var destPath = Path.Combine(targetDir, originalName);
+                        if (!System.IO.File.Exists(destPath))
+                        {
+                            System.IO.File.Move(file, destPath);
+                        }
+                    }
+                    Directory.Delete(tempDir, true);
+                }
+                throw;
+            }
         }
         catch (Exception ex)
         {
