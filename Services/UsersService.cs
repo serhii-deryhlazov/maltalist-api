@@ -3,6 +3,7 @@ using MaltalistApi.Helpers;
 using Google.Apis.Auth;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
+using System.Security.Claims;
 
 namespace MaltalistApi.Services;
 
@@ -261,5 +262,62 @@ public class UsersService : IUsersService
         }
 
         return user;
+    }
+
+    public async Task<(bool isValid, GoogleJsonWebSignature.Payload? payload, string? errorMessage)> ValidateGoogleTokenAsync(string idToken)
+    {
+        try
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+            
+            // Verify token expiration
+            var expirationTime = DateTimeOffset.FromUnixTimeSeconds(payload.ExpirationTimeSeconds ?? 0);
+            if (expirationTime < DateTimeOffset.UtcNow)
+            {
+                return (false, null, "Token has expired");
+            }
+
+            // Verify issued time (token should not be too old)
+            var issuedTime = DateTimeOffset.FromUnixTimeSeconds(payload.IssuedAtTimeSeconds ?? 0);
+            if (DateTimeOffset.UtcNow - issuedTime > TimeSpan.FromMinutes(10))
+            {
+                return (false, null, "Token is too old");
+            }
+
+            return (true, payload, null);
+        }
+        catch (InvalidJwtException)
+        {
+            return (false, null, "Invalid Google ID token");
+        }
+        catch (Exception)
+        {
+            return (false, null, "Authentication failed");
+        }
+    }
+
+    public ClaimsPrincipal CreateClaimsPrincipal(User user)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.Email, user.Email ?? ""),
+            new Claim(ClaimTypes.Name, user.UserName ?? "")
+        };
+
+        var claimsIdentity = new ClaimsIdentity(claims, "Cookies");
+        return new ClaimsPrincipal(claimsIdentity);
+    }
+
+    public (ClaimsPrincipal principal, Microsoft.AspNetCore.Authentication.AuthenticationProperties properties) CreateAuthenticationData(User user)
+    {
+        var claimsPrincipal = CreateClaimsPrincipal(user);
+        var authProperties = new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+        };
+
+        return (claimsPrincipal, authProperties);
     }
 }

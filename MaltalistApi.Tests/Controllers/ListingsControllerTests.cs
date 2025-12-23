@@ -12,12 +12,14 @@ namespace MaltalistApi.Tests.Controllers;
 public class ListingsControllerTests
 {
     private readonly Mock<IListingsService> _mockService;
+    private readonly Mock<IUsersService> _mockUsersService;
     private readonly ListingsController _controller;
 
     public ListingsControllerTests()
     {
         _mockService = new Mock<IListingsService>();
-        _controller = new ListingsController(_mockService.Object);
+        _mockUsersService = new Mock<IUsersService>();
+        _controller = new ListingsController(_mockService.Object, _mockUsersService.Object);
     }
 
     private void SetupAuthenticatedUser(string userId)
@@ -369,6 +371,16 @@ public class ListingsControllerTests
     public async Task GetUserListings_ReturnsOkResult_WithListings()
     {
         // Arrange
+        var user = new User
+        {
+            Id = "user1",
+            UserName = "Test User",
+            Email = "test@example.com",
+            UserPicture = "/default.png"
+        };
+        _mockUsersService.Setup(s => s.GetUserByIdAsync("user1"))
+            .ReturnsAsync(user);
+
         var listings = new List<ListingSummaryResponse>
         {
             new ListingSummaryResponse

@@ -87,7 +87,7 @@ output/**
 project.lock.json
 
 # Docker related
-**/Dockerfile*
+
 **/docker-compose*
 .dockerignore
 

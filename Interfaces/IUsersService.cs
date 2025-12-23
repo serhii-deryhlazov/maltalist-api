@@ -1,5 +1,6 @@
 using MaltalistApi.Models;
 using Google.Apis.Auth;
+using System.Security.Claims;
 
 namespace MaltalistApi.Services;
 
@@ -15,4 +16,7 @@ public interface IUsersService
     Task<bool> ActivateUserAsync(string id);
     Task<string?> DownloadAndSaveGoogleProfilePictureAsync(string userId, string imageUrl);
     Task<User> LoginWithGoogleAsync(GoogleJsonWebSignature.Payload payload);
+    Task<(bool isValid, GoogleJsonWebSignature.Payload? payload, string? errorMessage)> ValidateGoogleTokenAsync(string idToken);
+    ClaimsPrincipal CreateClaimsPrincipal(User user);
+    (ClaimsPrincipal principal, Microsoft.AspNetCore.Authentication.AuthenticationProperties properties) CreateAuthenticationData(User user);
 }

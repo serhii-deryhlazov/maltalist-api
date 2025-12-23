@@ -11,10 +11,12 @@ namespace MaltalistApi.Controllers;
 public class ListingsController : ControllerBase
 {
     private readonly IListingsService _listingsService;
+    private readonly IUsersService _usersService;
 
-    public ListingsController(IListingsService listingsService)
+    public ListingsController(IListingsService listingsService, IUsersService usersService)
     {
         _listingsService = listingsService;
+        _usersService = usersService;
     }
 
     [HttpGet("minimal")]
@@ -112,20 +114,14 @@ public class ListingsController : ControllerBase
     [HttpGet("{id}/listings")]
     public async Task<ActionResult<IEnumerable<ListingSummaryResponse>>> GetUserListings(string id)
     {
-        var listings = await _listingsService.GetUserListingsAsync(id);
-        if (listings == null)
+        var user = await _usersService.GetUserByIdAsync(id);
+        if (user == null)
             return NotFound(new { Message = "User not found" });
 
-        return Ok(listings);
-    }
+        var listings = await _listingsService.GetUserListingsAsync(id);
+        if (listings == null)
+            return NotFound(new { Message = "No listings found" });
 
-    private string GenerateRandom18DigitString(Random random)
-    {
-        var sb = new StringBuilder(18);
-        for (int i = 0; i < 18; i++)
-        {
-            sb.Append(random.Next(0, 10));
-        }
-        return sb.ToString();
+        return Ok(listings);
     }
 }

@@ -27,7 +27,6 @@ namespace MaltalistApi.Controllers
             _logger = logger;
         }
 
-        // GET: api/Promotions/promoted/{category}
         [HttpGet("promoted/{category}")]
         public async Task<IActionResult> GetPromotedListings(string category)
         {
@@ -38,7 +37,6 @@ namespace MaltalistApi.Controllers
                 .Select(p => p.Listing)
                 .ToListAsync();
 
-            // Populate Picture1 with the first image URL
             foreach (var l in promotedListings)
             {
                 if (l != null)
@@ -52,7 +50,7 @@ namespace MaltalistApi.Controllers
                             .ToList();
                         if (files.Any())
                         {
-                            l.Picture1 = $"/assets/img/listings/{l.Id}/{files.First()}";
+                            l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
                         }
                     }
                 }
@@ -61,34 +59,29 @@ namespace MaltalistApi.Controllers
             return Ok(promotedListings);
         }
 
-        // POST: api/Promotions/create-payment-intent
         [HttpPost("create-payment-intent")]
         [Authorize]
         public async Task<IActionResult> CreatePaymentIntent([FromBody] CreatePaymentIntentRequest request)
         {
             try
             {
-                // Validate input
                 if (request == null || request.Amount <= 0)
                 {
                     return BadRequest(new { Message = "Invalid payment amount" });
                 }
 
-                // Verify listing exists
                 var listing = await _context.Listings.FindAsync(request.ListingId);
                 if (listing == null)
                 {
                     return NotFound(new { Message = "Listing not found" });
                 }
 
-                // Verify ownership
                 var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(currentUserId) || listing.UserId != currentUserId)
                 {
                     return Forbid();
                 }
 
-                // Create payment intent
                 var clientSecret = await _paymentService.CreatePaymentIntentAsync(request.Amount);
                 
                 return Ok(new { clientSecret });
@@ -100,38 +93,32 @@ namespace MaltalistApi.Controllers
             }
         }
 
-        // POST: api/Promotions
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreatePromotion([FromBody] CreatePromotionRequest request)
         {
-            // Validate input
             if (request == null || request.ListingId <= 0)
             {
                 return BadRequest(new { Message = "Invalid promotion request" });
             }
 
-            // Verify listing exists
             var listing = await _context.Listings.FindAsync(request.ListingId);
             if (listing == null)
             {
                 return NotFound(new { Message = "Listing not found" });
             }
 
-            // Verify ownership: Only allow the listing owner to promote their listing
             var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(currentUserId) || listing.UserId != currentUserId)
             {
                 return Forbid();
             }
 
-            // Verify payment intent ID is provided
             if (string.IsNullOrWhiteSpace(request.PaymentIntentId))
             {
                 return BadRequest(new { Message = "Payment verification required. PaymentIntentId must be provided." });
             }
 
-            // Verify payment with payment service
             var promotionPrice = _configuration.GetValue<decimal>("Stripe:PromotionPrice", 9.99m);
             var paymentVerified = await _paymentService.VerifyPaymentIntentAsync(
                 request.PaymentIntentId, 
@@ -143,7 +130,6 @@ namespace MaltalistApi.Controllers
                 return BadRequest(new { Message = "Payment verification failed. Please ensure payment was successful." });
             }
 
-            // Check if listing is already promoted and not expired
             var existingPromotion = await _context.Promotions
                 .Where(p => p.ListingId == request.ListingId && p.ExpirationDate > DateTime.UtcNow)
                 .FirstOrDefaultAsync();

@@ -18,5 +18,5 @@ public class Listing
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     [NotMapped]
-    public string? Picture1 { get; set; }
+    public string? Picture { get; set; }
 }

@@ -47,7 +47,7 @@ public class PicturesControllerTests
         var result = await controller.AddListingPictures(1);
 
         // Assert
-        Assert.IsType<NotFoundResult>(result);
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     [Fact]

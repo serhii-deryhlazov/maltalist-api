@@ -33,7 +33,6 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<ActionResult<User>> UpdateUserProfile(string id, [FromBody] User updatedUser)
     {
-        // Verify ownership: Only allow users to modify their own profile
         var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
         {
@@ -58,7 +57,6 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<ActionResult> DeleteUserProfile(string id)
     {
-        // Verify ownership: Only allow users to delete their own profile
         var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
         {
@@ -93,7 +91,6 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UploadProfilePicture(string id)
     {
-        // Verify ownership: Only allow users to upload their own profile picture
         var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
         {
@@ -124,7 +121,6 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<ActionResult> ExportUserData(string id)
     {
-        // Verify ownership: Only allow users to export their own data
         var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
         {
@@ -145,7 +141,6 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<ActionResult> DeactivateAccount(string id)
     {
-        // Verify ownership: Only allow users to deactivate their own account
         var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
         {
@@ -166,7 +161,6 @@ public class UserProfileController : ControllerBase
     [Authorize]
     public async Task<ActionResult> ActivateAccount(string id)
     {
-        // Verify ownership: Only allow users to activate their own account
         var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(currentUserId) || currentUserId != id)
         {

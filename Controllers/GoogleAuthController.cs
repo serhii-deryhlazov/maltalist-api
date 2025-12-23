@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using System.Security.Claims;
 
 namespace MaltalistApi.Controllers;
 
@@ -31,65 +30,39 @@ public class GoogleAuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<User>> LoginWithGoogle([FromBody] GoogleLoginRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.IdToken))
+        var (validationResult, payload) = await ValidateRequest(request);
+        if (validationResult != null)
         {
-            return BadRequest(new { Message = "ID token is required" });
+            return validationResult;
         }
 
-        GoogleJsonWebSignature.Payload payload;
-
-        try
-        {
-            payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
-            
-            // Verify token expiration
-            var expirationTime = DateTimeOffset.FromUnixTimeSeconds(payload.ExpirationTimeSeconds ?? 0);
-            if (expirationTime < DateTimeOffset.UtcNow)
-            {
-                return Unauthorized(new { Message = "Token has expired" });
-            }
-
-            // Verify issued time (token should not be too old)
-            var issuedTime = DateTimeOffset.FromUnixTimeSeconds(payload.IssuedAtTimeSeconds ?? 0);
-            if (DateTimeOffset.UtcNow - issuedTime > TimeSpan.FromMinutes(10))
-            {
-                return Unauthorized(new { Message = "Token is too old" });
-            }
-        }
-        catch (InvalidJwtException ex)
-        {
-            _logger.LogWarning(ex, "Invalid JWT token received");
-            return Unauthorized(new { Message = "Invalid Google ID token" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error validating Google token");
-            return Unauthorized(new { Message = "Authentication failed" });
-        }
-
-        var user = await _usersService.LoginWithGoogleAsync(payload);
+        var user = await _usersService.LoginWithGoogleAsync(payload!);
         
-        // Create claims for authentication
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email ?? ""),
-            new Claim(ClaimTypes.Name, user.UserName ?? "")
-        };
-
-        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties
-        {
-            IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
-        };
+        var (claimsPrincipal, authProperties) = _usersService.CreateAuthenticationData(user);
 
         await HttpContext.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(claimsIdentity),
+            claimsPrincipal,
             authProperties);
 
         return Ok(user);
+    }
+
+    private async Task<(ActionResult?, GoogleJsonWebSignature.Payload?)> ValidateRequest(GoogleLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.IdToken))
+        {
+            return (BadRequest(new { Message = "ID token is required" }), null);
+        }
+
+        var (isValid, payload, errorMessage) = await _usersService.ValidateGoogleTokenAsync(request.IdToken);
+
+        if (!isValid || payload == null)
+        {
+            return (Unauthorized(new { Message = errorMessage ?? "Authentication failed" }), null);
+        }
+
+        return (null, payload);
     }
 
 }

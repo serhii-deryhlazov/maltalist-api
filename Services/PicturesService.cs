@@ -20,7 +20,6 @@ public class PicturesService : IPicturesService
         if (listing == null)
             throw new InvalidOperationException("Listing not found");
 
-        // Simply save the new files to the directory (they will be appended)
         var savedFiles = await _fileStorage.SaveFilesAsync(listingId, files);
 
         listing.UpdatedAt = DateTime.UtcNow;
@@ -36,10 +35,8 @@ public class PicturesService : IPicturesService
         if (listing == null)
             throw new InvalidOperationException("Listing not found");
 
-        // Delete all existing files in the directory
         await _fileStorage.DeleteFilesAsync(listingId);
 
-        // Save all new files from the request
         var savedFiles = await _fileStorage.SaveFilesAsync(listingId, files);
 
         listing.UpdatedAt = DateTime.UtcNow;

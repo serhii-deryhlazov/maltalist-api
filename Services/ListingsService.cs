@@ -31,7 +31,6 @@ public class ListingsService : IListingsService
             query = query.Where(l => l.Category == request.Category);
         }
 
-        // Sorting
         if (!string.IsNullOrEmpty(request.Sort))
         {
             switch (request.Sort)
@@ -84,21 +83,9 @@ public class ListingsService : IListingsService
             })
             .ToListAsync();
 
-        // Populate Picture with the first image URL
         foreach (var l in listings)
         {
-            var picDir = $"/images/listings/{l.Id}";
-            if (Directory.Exists(picDir))
-            {
-                var files = Directory.GetFiles(picDir)
-                    .Select(Path.GetFileName)
-                    .OrderBy(f => f)
-                    .ToList();
-                if (files.Any())
-                {
-                    l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
-                }
-            }
+            PopulateListingImage(l);
         }
 
         return new GetAllListingsResponse
@@ -115,19 +102,7 @@ public class ListingsService : IListingsService
         if (listing == null)
             return null;
 
-        // Populate Picture1 with the first image URL from filesystem
-        var picDir = $"/images/listings/{listing.Id}";
-        if (Directory.Exists(picDir))
-        {
-            var files = Directory.GetFiles(picDir)
-                .Select(Path.GetFileName)
-                .OrderBy(f => f)
-                .ToList();
-            if (files.Any())
-            {
-                listing.Picture1 = $"/assets/img/listings/{listing.Id}/{files.First()}";
-            }
-        }
+        PopulateListingImage(listing);
 
         return listing;
     }
@@ -203,7 +178,6 @@ public class ListingsService : IListingsService
         if (listing == null)
             return false;
 
-        // Delete pictures from file storage
         await _fileStorage.DeleteFilesAsync(id);
 
         _db.Listings.Remove(listing);
@@ -219,10 +193,6 @@ public class ListingsService : IListingsService
 
     public async Task<IEnumerable<ListingSummaryResponse>?> GetUserListingsAsync(string userId)
     {
-        var user = await _db.Users.FindAsync(userId);
-        if (user == null)
-            return null;
-
         var listings = await _db.Listings
             .Where(l => l.UserId == userId)
             .Select(l => new ListingSummaryResponse
@@ -240,21 +210,9 @@ public class ListingsService : IListingsService
             })
             .ToListAsync();
 
-        // Populate Picture with the first image URL
         foreach (var l in listings)
         {
-            var picDir = $"/images/listings/{l.Id}";
-            if (Directory.Exists(picDir))
-            {
-                var files = Directory.GetFiles(picDir)
-                    .Select(Path.GetFileName)
-                    .OrderBy(f => f)
-                    .ToList();
-                if (files.Any())
-                {
-                    l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
-                }
-            }
+            PopulateListingImage(l);
         }
 
         return listings;
@@ -355,18 +313,7 @@ public class ListingsService : IListingsService
             // Populate Picture with the first image URL
             foreach (var l in result)
             {
-                var picDir = $"/images/listings/{l.Id}";
-                if (Directory.Exists(picDir))
-                {
-                    var files = Directory.GetFiles(picDir)
-                        .Select(Path.GetFileName)
-                        .OrderBy(f => f)
-                        .ToList();
-                    if (files.Any())
-                    {
-                        l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
-                    }
-                }
+                PopulateListingImage(l);
             }
 
             return new GetAllListingsResponse
@@ -400,18 +347,7 @@ public class ListingsService : IListingsService
             // Populate Picture with the first image URL
             foreach (var l in result)
             {
-                var picDir = $"/images/listings/{l.Id}";
-                if (Directory.Exists(picDir))
-                {
-                    var files = Directory.GetFiles(picDir)
-                        .Select(Path.GetFileName)
-                        .OrderBy(f => f)
-                        .ToList();
-                    if (files.Any())
-                    {
-                        l.Picture = $"/assets/img/listings/{l.Id}/{files.First()}";
-                    }
-                }
+                PopulateListingImage(l);
             }
 
             return new GetAllListingsResponse
@@ -430,5 +366,25 @@ public class ListingsService : IListingsService
         var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) + Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
         var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         return 6371 * c; // km
+    }
+
+    private void PopulateListingImage(ListingSummaryResponse listing) => PopulateListingImageInternal(listing.Id, picture => listing.Picture = picture);
+
+    private void PopulateListingImage(Listing listing) => PopulateListingImageInternal(listing.Id, picture => listing.Picture = picture);
+
+    private void PopulateListingImageInternal(int listingId, Action<string> setPicture)
+    {
+        var picDir = $"/images/listings/{listingId}";
+        if (Directory.Exists(picDir))
+        {
+            var files = Directory.GetFiles(picDir)
+                .Select(Path.GetFileName)
+                .OrderBy(f => f)
+                .ToList();
+            if (files.Any())
+            {
+                setPicture($"/assets/img/listings/{listingId}/{files.First()}");
+            }
+        }
     }
 }
