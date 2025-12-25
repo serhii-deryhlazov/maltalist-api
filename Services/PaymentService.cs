@@ -1,5 +1,6 @@
 using MaltalistApi.Interfaces;
 using Stripe;
+using Stripe.Checkout;
 
 namespace MaltalistApi.Services;
 
@@ -12,6 +13,58 @@ public class PaymentService : IPaymentService
     {
         _configuration = configuration;
         _logger = logger;
+    }
+
+    public async Task<string> CreateCheckoutSessionAsync(
+        int listingId, 
+        string priceId,
+        string successUrl, 
+        string cancelUrl)
+    {
+        try
+        {
+            // Configure Stripe API key
+            StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
+            
+            // Create checkout session using Price ID from Stripe Dashboard
+            var options = new SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = new List<SessionLineItemOptions>
+                {
+                    new SessionLineItemOptions
+                    {
+                        Price = priceId, // Use Stripe Price ID (e.g., price_1AbC...)
+                        Quantity = 1,
+                    },
+                },
+                Mode = "payment",
+                SuccessUrl = successUrl,
+                CancelUrl = cancelUrl,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "listing_id", listingId.ToString() }
+                }
+            };
+            
+            var service = new SessionService();
+            var session = await service.CreateAsync(options);
+
+            _logger.LogInformation("Created checkout session {SessionId} for listing {ListingId} with price {PriceId}", 
+                session.Id, listingId, priceId);
+
+            return session.Url!; // Return the Stripe Checkout URL to redirect user
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogError(ex, "Stripe API error creating checkout session for listing {ListingId}", listingId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating checkout session for listing {ListingId}", listingId);
+            throw;
+        }
     }
 
     public async Task<string> CreatePaymentIntentAsync(decimal amount, string currency = "eur")
@@ -49,6 +102,40 @@ public class PaymentService : IPaymentService
         {
             _logger.LogError(ex, "Error creating payment intent for amount {Amount}", amount);
             throw;
+        }
+    }
+
+    public async Task<bool> VerifyCheckoutSessionAsync(string sessionId)
+    {
+        try
+        {
+            // Configure Stripe API key
+            StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
+            
+            // Get session from Stripe
+            var service = new SessionService();
+            var session = await service.GetAsync(sessionId);
+
+            // Verify payment status is complete
+            if (session.PaymentStatus != "paid")
+            {
+                _logger.LogWarning("Checkout session {SessionId} has payment status {Status}", 
+                    sessionId, session.PaymentStatus);
+                return false;
+            }
+
+            _logger.LogInformation("Checkout session {SessionId} verified successfully", sessionId);
+            return true;
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogError(ex, "Stripe API error verifying checkout session {SessionId}", sessionId);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verifying checkout session {SessionId}", sessionId);
+            return false;
         }
     }
 

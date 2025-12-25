@@ -41,7 +41,7 @@ namespace MaltalistApi.Controllers
             {
                 if (l != null)
                 {
-                    var picDir = $"/images/{l.Id}";
+                    var picDir = $"/images/listings/{l.Id}";
                     if (Directory.Exists(picDir))
                     {
                         var files = Directory.GetFiles(picDir)
@@ -57,6 +57,26 @@ namespace MaltalistApi.Controllers
             }
 
             return Ok(promotedListings);
+        }
+
+        [HttpGet("pricing")]
+        public IActionResult GetPricing()
+        {
+            var pricing = new
+            {
+                week = new
+                {
+                    priceId = _configuration["Stripe:PriceIds:Week"],
+                    duration = "week"
+                },
+                month = new
+                {
+                    priceId = _configuration["Stripe:PriceIds:Month"],
+                    duration = "month"
+                }
+            };
+
+            return Ok(pricing);
         }
 
         [HttpPost("create-payment-intent")]
@@ -93,6 +113,50 @@ namespace MaltalistApi.Controllers
             }
         }
 
+        [HttpPost("create-checkout-session")]
+        [Authorize]
+        public async Task<IActionResult> CreateCheckoutSession([FromBody] CreateCheckoutSessionRequest request)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.PriceId))
+                {
+                    return BadRequest(new { Message = "Invalid request. PriceId is required." });
+                }
+
+                var listing = await _context.Listings.FindAsync(request.ListingId);
+                if (listing == null)
+                {
+                    return NotFound(new { Message = "Listing not found" });
+                }
+
+                var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(currentUserId) || listing.UserId != currentUserId)
+                {
+                    return Forbid();
+                }
+
+                // Use frontend URL from configuration or default
+                var frontendUrl = _configuration["FrontendUrl"] ?? "http://localhost";
+                var successUrl = $"{frontendUrl}/listing/{request.ListingId}?payment=success&session_id={{CHECKOUT_SESSION_ID}}&duration={request.Duration}";
+                var cancelUrl = $"{frontendUrl}/listing/{request.ListingId}?payment=cancelled";
+
+                var checkoutUrl = await _paymentService.CreateCheckoutSessionAsync(
+                    request.ListingId, 
+                    request.PriceId,
+                    successUrl, 
+                    cancelUrl
+                );
+                
+                return Ok(new { checkoutUrl });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating checkout session for listing {ListingId}", request.ListingId);
+                return StatusCode(500, new { Message = "Failed to create checkout session" });
+            }
+        }
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreatePromotion([FromBody] CreatePromotionRequest request)
@@ -114,16 +178,25 @@ namespace MaltalistApi.Controllers
                 return Forbid();
             }
 
-            if (string.IsNullOrWhiteSpace(request.PaymentIntentId))
-            {
-                return BadRequest(new { Message = "Payment verification required. PaymentIntentId must be provided." });
-            }
+            bool paymentVerified = false;
 
-            var promotionPrice = _configuration.GetValue<decimal>("Stripe:PromotionPrice", 9.99m);
-            var paymentVerified = await _paymentService.VerifyPaymentIntentAsync(
-                request.PaymentIntentId, 
-                promotionPrice
-            );
+            // Support both checkout session ID and payment intent ID
+            if (!string.IsNullOrWhiteSpace(request.SessionId))
+            {
+                paymentVerified = await _paymentService.VerifyCheckoutSessionAsync(request.SessionId);
+            }
+            else if (!string.IsNullOrWhiteSpace(request.PaymentIntentId))
+            {
+                var promotionPrice = _configuration.GetValue<decimal>("Stripe:PromotionPrice", 9.99m);
+                paymentVerified = await _paymentService.VerifyPaymentIntentAsync(
+                    request.PaymentIntentId, 
+                    promotionPrice
+                );
+            }
+            else
+            {
+                return BadRequest(new { Message = "Payment verification required. Either SessionId or PaymentIntentId must be provided." });
+            }
             
             if (!paymentVerified)
             {
@@ -158,12 +231,20 @@ namespace MaltalistApi.Controllers
         public int ListingId { get; set; }
         public DateTime ExpirationDate { get; set; }
         public required string Category { get; set; }
-        public required string PaymentIntentId { get; set; } // Stripe payment intent ID for verification
+        public string? SessionId { get; set; } // Stripe checkout session ID for verification (Stripe Checkout)
+        public string? PaymentIntentId { get; set; } // Stripe payment intent ID for verification (Payment Intents API)
     }
 
     public class CreatePaymentIntentRequest
     {
         public int ListingId { get; set; }
         public decimal Amount { get; set; }
+    }
+
+    public class CreateCheckoutSessionRequest
+    {
+        public int ListingId { get; set; }
+        public required string PriceId { get; set; } // Stripe Price ID from your dashboard
+        public required string Duration { get; set; } // "week" or "month"
     }
 }
