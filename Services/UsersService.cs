@@ -34,6 +34,7 @@ public class UsersService : IUsersService
         user.Email = InputSanitizer.SanitizeEmail(updatedUser.Email) ?? user.Email;
         user.LastOnline = DateTime.UtcNow;
         user.PhoneNumber = InputSanitizer.SanitizeText(updatedUser.PhoneNumber);
+        user.UsingWA = updatedUser.UsingWA;
 
         _db.Users.Update(user);
         await _db.SaveChangesAsync();
