@@ -17,8 +17,12 @@ mysql -u root -p${MYSQL_ROOT_PASSWORD} <<'EOSQL'
 CREATE DATABASE IF NOT EXISTS maltalist;
 USE maltalist;
 
--- Create Users table
-CREATE TABLE IF NOT EXISTS Users (
+-- Drop and recreate Users table to ensure schema is up to date
+DROP TABLE IF EXISTS Promotions;
+DROP TABLE IF EXISTS Listings;
+DROP TABLE IF EXISTS Users;
+
+CREATE TABLE Users (
     Id VARCHAR(255) PRIMARY KEY,
     UserName VARCHAR(255) NOT NULL,
     PhoneNumber VARCHAR(50),
@@ -28,11 +32,12 @@ CREATE TABLE IF NOT EXISTS Users (
     LastOnline DATETIME NOT NULL,
     ConsentTimestamp DATETIME NULL,
     IsActive BOOLEAN NOT NULL DEFAULT TRUE,
+    UsingWA BOOLEAN NOT NULL DEFAULT FALSE,
     UNIQUE KEY UK_Email (Email)
 );
 
 -- Create Listings table
-CREATE TABLE IF NOT EXISTS Listings (
+CREATE TABLE Listings (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     Title VARCHAR(255) NOT NULL,
     Description TEXT NOT NULL,
@@ -50,7 +55,7 @@ CREATE TABLE IF NOT EXISTS Listings (
 );
 
 -- Create Promotions table
-CREATE TABLE IF NOT EXISTS Promotions (
+CREATE TABLE Promotions (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     ListingId INT NOT NULL,
     ExpirationDate DATETIME NOT NULL,
@@ -77,17 +82,17 @@ printf "ALTER USER 'maltalist_user'@'%%' IDENTIFIED WITH mysql_native_password B
 
 echo "Database and user created successfully!"
 
-# Apply freshest backup if exists
-latest_backup=$(ls -1 /backups/maltalist_*.sql 2>/dev/null | sort | tail -n 1)
-if [ -f "$latest_backup" ]; then
-  mysql -u root -p${MYSQL_ROOT_PASSWORD} maltalist < "$latest_backup"
-  echo "Backup $latest_backup applied successfully!"
-fi
-
 # Check for prod flag or environment variable
 IS_PROD=false
 if [ "$1" = "--prod" ] || [ "$ENVIRONMENT" = "production" ]; then
     IS_PROD=true
+fi
+
+# Apply backup if exists (now only contains data, not schema)
+latest_backup=$(ls -1 /backups/maltalist_*.sql 2>/dev/null | sort | tail -n 1)
+if [ -f "$latest_backup" ]; then
+  mysql -u root -p${MYSQL_ROOT_PASSWORD} maltalist < "$latest_backup"
+  echo "Backup $latest_backup applied successfully!"
 fi
 
 if [ "$IS_PROD" = false ]; then

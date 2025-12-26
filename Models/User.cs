@@ -11,4 +11,5 @@ public class User
     public DateTime LastOnline { get; set; }
     public DateTime? ConsentTimestamp { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool UsingWA { get; set; } = false;
 }
