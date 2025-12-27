@@ -27,6 +27,24 @@ namespace MaltalistApi.Controllers
             _logger = logger;
         }
 
+        [HttpGet("promoted/check/{listingId}")]
+        public async Task<bool> TryGetPromotedListingById([FromRoute]int listingId)
+        {
+            var now = DateTime.UtcNow;
+            var promotedListings = await _context.Promotions
+                .Where(p => p.ListingId == listingId && p.ExpirationDate > now)
+                .Include(p => p.Listing).AsNoTracking()
+                .Select(p => p.Listing)
+                .ToListAsync();
+
+            if (promotedListings.Any()) 
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         [HttpGet("promoted/{category}")]
         public async Task<IActionResult> GetPromotedListings(string category)
         {
