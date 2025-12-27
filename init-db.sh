@@ -101,7 +101,7 @@ if [ "$IS_PROD" = false ]; then
     mysql -u root -p${MYSQL_ROOT_PASSWORD} <<EOSQL
     USE maltalist;
 
-    INSERT INTO Users (Id, UserName, Email, UserPicture, PhoneNumber, CreatedAt, LastOnline, ConsentTimestamp, IsActive)
+    INSERT INTO Users (Id, UserName, Email, UserPicture, PhoneNumber, CreatedAt, LastOnline, ConsentTimestamp, IsActive, UsingWA)
     VALUES 
         (
             'e2e-test-user-1',
@@ -112,7 +112,8 @@ if [ "$IS_PROD" = false ]; then
             NOW(),
             NOW(),
             NOW(),
-            TRUE
+            TRUE,
+            FALSE
         ),
         (
             'e2e-test-user-2',
@@ -123,7 +124,8 @@ if [ "$IS_PROD" = false ]; then
             NOW(),
             NOW(),
             NOW(),
-            TRUE
+            TRUE,
+            FALSE
         ),
         (
             'e2e-test-seller',
@@ -134,14 +136,16 @@ if [ "$IS_PROD" = false ]; then
             NOW(),
             NOW(),
             NOW(),
-            TRUE
+            TRUE,
+            FALSE
         )
     ON DUPLICATE KEY UPDATE 
         UserName = VALUES(UserName),
         Email = VALUES(Email),
         UserPicture = VALUES(UserPicture),
         PhoneNumber = VALUES(PhoneNumber),
-        IsActive = TRUE;
+        IsActive = TRUE,
+        UsingWA = VALUES(UsingWA);
 EOSQL
     echo "E2E test users ready!"
 else

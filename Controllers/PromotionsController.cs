@@ -67,12 +67,20 @@ namespace MaltalistApi.Controllers
                 week = new
                 {
                     priceId = _configuration["Stripe:PriceIds:Week"],
-                    duration = "week"
+                    duration = "week",
+                    label = "1 Week"
+                },
+                twoWeeks = new
+                {
+                    priceId = _configuration["Stripe:PriceIds:TwoWeeks"],
+                    duration = "two-weeks",
+                    label = "2 Weeks"
                 },
                 month = new
                 {
                     priceId = _configuration["Stripe:PriceIds:Month"],
-                    duration = "month"
+                    duration = "month",
+                    label = "1 Month"
                 }
             };
 
