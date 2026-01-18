@@ -17,7 +17,8 @@ mysql -u root -p${MYSQL_ROOT_PASSWORD} <<'EOSQL'
 CREATE DATABASE IF NOT EXISTS maltalist;
 USE maltalist;
 
--- Drop and recreate Users table to ensure schema is up to date
+-- Drop and recreate tables to ensure schema is up to date
+DROP TABLE IF EXISTS Reports;
 DROP TABLE IF EXISTS Promotions;
 DROP TABLE IF EXISTS Listings;
 DROP TABLE IF EXISTS Users;
@@ -63,12 +64,31 @@ CREATE TABLE Promotions (
     FOREIGN KEY (ListingId) REFERENCES Listings(Id)
 );
 
+-- Create Reports table for content reporting mechanism
+CREATE TABLE Reports (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    ListingId INT NOT NULL,
+    ReporterName VARCHAR(255),
+    ReporterEmail VARCHAR(255),
+    Reason VARCHAR(100) NOT NULL,
+    Description TEXT,
+    Status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ReviewedAt DATETIME,
+    ReviewedBy VARCHAR(255),
+    ReviewNotes TEXT,
+    FOREIGN KEY (ListingId) REFERENCES Listings(Id) ON DELETE CASCADE
+);
+
 -- Create indexes
 CREATE INDEX IX_Listings_Category ON Listings(Category);
 CREATE INDEX IX_Listings_UserId ON Listings(UserId);
 CREATE INDEX IX_Listings_CreatedAt ON Listings(CreatedAt DESC);
 CREATE INDEX IX_Promotions_Category ON Promotions(Category);
 CREATE INDEX IX_Promotions_ExpirationDate ON Promotions(ExpirationDate);
+CREATE INDEX IX_Reports_ListingId ON Reports(ListingId);
+CREATE INDEX IX_Reports_Status ON Reports(Status);
+CREATE INDEX IX_Reports_CreatedAt ON Reports(CreatedAt DESC);
 
 EOSQL
 

@@ -18,6 +18,7 @@ builder.Services.AddScoped<IPicturesService, PicturesService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IReportsService, ReportsService>();
 
 builder.AddAuthenticationAndAuthorization();
 

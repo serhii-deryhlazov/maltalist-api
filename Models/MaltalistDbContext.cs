@@ -12,4 +12,5 @@ public class MaltalistDbContext : DbContext
     public DbSet<Listing> Listings { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Promotion> Promotions { get; set; }
+    public DbSet<Report> Reports { get; set; }
 }
